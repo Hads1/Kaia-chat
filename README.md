@@ -4,6 +4,8 @@ Overlay de leitura para **Twitch, Kick e Starvios**, feito para Windows. Configu
 
 ## Usar
 
+**[Baixar o aplicativo pronto para Windows 10/11 (64 bits)](https://github.com/Hads1/Kaia-chat/releases/latest)**
+
 Baixe o ZIP de uma versão em **Releases**, extraia a pasta inteira e abra `KaiaChat.exe`. Não é necessário instalar Node.js nem fazer login nas plataformas. Informe o nome ou link dos canais desejados, escolha os sons e clique em **Salvar e conectar**. Não execute o programa de dentro do ZIP.
 
 O aplicativo não envia mensagens. A leitura pública depende da disponibilidade das plataformas.
@@ -16,6 +18,13 @@ O aplicativo não envia mensagens. A leitura pública depende da disponibilidade
 - Emotes nativos e conjuntos públicos disponíveis de 7TV, BetterTTV, FrankerFaceZ e Starvios.
 - Modo totalmente transparente: apenas mensagens, sem fundo, bordas ou botões; os cliques passam para o jogo.
 - Reconexão automática, controle de duplicatas e limite de 300 mensagens.
+- **Chats bloqueados**: listas globais ou por plataforma, sem exibir mensagens nem tocar áudio dos nicks bloqueados.
+
+### Chats bloqueados
+
+Abra **Chats bloqueados** nas configurações e informe um nick por linha, ou separe por vírgulas. Use a lista **Todas as plataformas** para bloquear em qualquer chat, ou as listas individuais para Twitch, Kick e Starvios. Aceita `@` e ignora diferenças entre maiúsculas/minúsculas; o nome precisa corresponder ao nick completo. O filtro usa o login do usuário quando ele é informado pela plataforma, mesmo que o nome de exibição seja diferente.
+
+Clique em **Salvar bloqueios**. As mensagens desses usuários já presentes no painel são removidas, novas mensagens são descartadas antes de chegar à interface e não disparam sons. As conexões continuam ativas e as listas são preservadas ao reabrir o aplicativo. Remova o nick e salve para voltar a ver as próximas mensagens. Este filtro é local: não bane usuários nem modifica o chat original das plataformas. Suas listas ficam apenas nas configurações deste computador e não acompanham o ZIP compartilhado.
 
 **Ctrl+Shift+F9** retorna às configurações e libera cliques. **Ctrl+Shift+F10** alterna a passagem de cliques. O ícone na bandeja também recupera a janela. Use jogos em janela ou janela sem borda; tela cheia exclusiva pode cobrir o overlay.
 

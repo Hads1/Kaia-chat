@@ -33,6 +33,7 @@ for (const p of ['twitch', 'kick', 'starvios']) {
 }
 function apply(s) {
   settings = s;
+  setBlockedUsers(s.blockedUsers);
   for (const p of ['kick', 'twitch', 'starvios']) {
     $(`#${p}-enabled`).checked = s[p].enabled;
     $(`#${p}-channel`).value = s[p].channel;
@@ -88,6 +89,7 @@ $('#connect').onclick = async () => {
       fontSize: +$('#fontSize').value,
       sounds: $('#sounds').checked,
       appearance: readStyle(),
+      blockedUsers: readBlockedUsers(),
     };
     for (const p of ['kick', 'twitch', 'starvios'])
       s[p] = {
@@ -175,6 +177,8 @@ function renderText(m, node) {
   words(chars.slice(offset).join(''));
 }
 window.kaia.on('message', (m) => {
+  if (KaiaBlocking.isBlocked(activeBlockedUsers, m.platform, m.login || m.user))
+    return;
   const key = m.platform + ':' + m.id;
   if (m.id && seen.has(key)) return;
   if (m.id) {
@@ -188,6 +192,7 @@ window.kaia.on('message', (m) => {
   row.className = 'message';
   row.dataset.platform = m.platform;
   row.dataset.messageId = m.id || '';
+  row.dataset.login = m.login || m.user;
   const badge = document.createElement('span');
   badge.className = 'platform ' + m.platform;
   badge.textContent = { kick: 'K', twitch: 'T', starvios: 'S' }[m.platform];

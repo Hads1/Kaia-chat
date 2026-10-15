@@ -32,6 +32,8 @@ const source = [
   'starvios.js',
   'protocol.js',
   'appearance.js',
+  'blocking.js',
+  'blocked-ui.js',
   'typography.js',
   'smoke.js',
   'live-test.js',

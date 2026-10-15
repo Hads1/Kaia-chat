@@ -27,6 +27,7 @@ function irc(line) {
     ? {
         id: tags.id,
         user: tags['display-name'] || m[1],
+        login: m[1],
         text: m[2],
         color: tags.color || '#c4b5fd',
         emotes: tags.emotes || '',

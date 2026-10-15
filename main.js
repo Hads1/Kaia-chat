@@ -13,6 +13,7 @@ const { pathToFileURL } = require('url');
 const { Chats } = require('./services');
 const { channel } = require('./protocol');
 const { normalizeAppearance } = require('./appearance');
+const { normalizeBlockedUsers, isBlocked } = require('./blocking');
 const { execFileSync } = require('child_process');
 let availableFonts = [
   'Segoe UI',
@@ -63,12 +64,14 @@ if (smoke) {
   app.setPath('userData', testPath);
 }
 settings.appearance = normalizeAppearance();
+settings.blockedUsers = normalizeBlockedUsers();
 const config = () => path.join(app.getPath('userData'), 'settings.json');
 const assets = path.join(__dirname, 'assets');
 function decorated() {
   return {
     ...settings,
     appearance: normalizeAppearance(settings.appearance),
+    blockedUsers: normalizeBlockedUsers(settings.blockedUsers),
     fonts: availableFonts,
     soundFiles: fs.readdirSync(assets).filter((n) => /\.wav$/i.test(n)),
     soundUrls: Object.fromEntries(
@@ -84,6 +87,11 @@ function decorated() {
   };
 }
 function emit(type, data) {
+  if (
+    type === 'message' &&
+    isBlocked(settings.blockedUsers, data.platform, data.login || data.user)
+  )
+    return;
   if (win && !win.isDestroyed()) win.webContents.send(type, data);
   if (type === 'status')
     fs.appendFile(
@@ -126,6 +134,11 @@ app.whenReady().then(async () => {
   win.webContents.on('will-navigate', (e) => e.preventDefault());
   chats = new Chats(emit);
   ipcMain.handle('load', () => decorated());
+  ipcMain.handle('save-blocked', (_, lists) => {
+    settings.blockedUsers = normalizeBlockedUsers(lists);
+    fs.writeFileSync(config(), JSON.stringify(settings, null, 2));
+    return decorated();
+  });
   ipcMain.handle('save-appearance', (_, s) => {
     settings.appearance = normalizeAppearance(s.appearance);
     settings.fontSize = Math.min(36, Math.max(12, Number(s.fontSize) || 18));
@@ -134,6 +147,9 @@ app.whenReady().then(async () => {
     return decorated();
   });
   ipcMain.handle('save', (_, s) => {
+    const blockedUsers = normalizeBlockedUsers(
+      s.blockedUsers ?? settings.blockedUsers,
+    );
     for (const p of ['twitch', 'kick', 'starvios']) {
       const c = channel(s[p]?.channel);
       const sound = String(s[p]?.sound || settings[p].sound);
@@ -153,6 +169,7 @@ app.whenReady().then(async () => {
     settings.fontSize = Math.min(36, Math.max(12, Number(s.fontSize) || 18));
     settings.sounds = !!s.sounds;
     settings.appearance = normalizeAppearance(s.appearance);
+    settings.blockedUsers = blockedUsers;
     fs.writeFileSync(config(), JSON.stringify(settings, null, 2));
     chats.start(settings);
     return decorated();

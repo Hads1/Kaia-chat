@@ -26,6 +26,24 @@ test('Centrifugo reconhece confirmação, publicação e ping', () => {
 });
 const { normalizeAppearance } = require('./appearance');
 const { normalizeMessage } = require('./starvios');
+const { normalizeBlockedUsers, isBlocked } = require('./blocking');
+test('bloqueios normalizam nicks e mantêm correspondência exata e escopo por plataforma', () => {
+  const lists = normalizeBlockedUsers({
+    all: ' @GlobalBot,GLOBALBOT ; OutroBot',
+    twitch: ['@SpamMeR', 'spammer'],
+    starvios: 'Pessoa_SV',
+  });
+  assert.deepEqual(lists.all, ['globalbot', 'outrobot']);
+  assert.deepEqual(lists.twitch, ['spammer']);
+  assert.equal(isBlocked(lists, 'kick', 'GLOBALBOT'), true);
+  assert.equal(isBlocked(lists, 'starvios', '@GlobalBot'), true);
+  assert.equal(isBlocked(lists, 'twitch', 'SPAMMER'), true);
+  assert.equal(isBlocked(lists, 'kick', 'spammer'), false);
+  assert.equal(isBlocked(lists, 'twitch', 'spammer_extra'), false);
+  assert.equal(isBlocked(lists, 'starvios', 'pessoa_sv'), true);
+  assert.equal(isBlocked(normalizeBlockedUsers(), 'twitch', 'spammer'), false);
+  assert.throws(() => normalizeBlockedUsers({ all: 'nome!invalido' }));
+});
 test('Starvios resolve links e mensagens públicas sem depender de outras plataformas', () => {
   assert.equal(channel('https://starvios.com/hads'), 'hads');
   assert.equal(

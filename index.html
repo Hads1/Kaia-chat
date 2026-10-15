@@ -45,6 +45,23 @@
             ><input type="checkbox" id="sounds" /> Sons de mensagens</label
           >
         </div>
+        <details class="type-panel" id="blocked-panel">
+          <summary>
+            Chats bloqueados
+            <span>Oculte mensagens e sons de nicks específicos</span>
+          </summary>
+          <div class="type-content">
+            <p class="type-hint">
+              Um nick por linha, ou separe por vírgulas. Aceita @ e ignora
+              maiúsculas/minúsculas. O bloqueio é apenas neste overlay.
+            </p>
+            <div id="blocked-fields" class="blocked-grid"></div>
+            <button id="save-blocked" class="secondary">
+              Salvar bloqueios
+            </button>
+            <p id="blocked-status" role="status"></p>
+          </div>
+        </details>
         <details class="type-panel" id="type-panel">
           <summary>
             Fonte, cor e sombra <span>Personalize seu chat</span>
@@ -175,6 +192,8 @@
         Ctrl+Shift+F9: configurar · Ctrl+Shift+F10: liberar/bloquear cliques
       </footer>
     </main>
+    <script src="blocking.js"></script>
+    <script src="blocked-ui.js"></script>
     <script src="typography.js"></script>
     <script src="renderer.js"></script>
   </body>

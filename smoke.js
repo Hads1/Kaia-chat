@@ -84,14 +84,87 @@ module.exports = async (win, app, emit, config) => {
       transparent.rows === 3 &&
       alpha === 0 &&
       recovered;
+    emit('message', {
+      platform: 'twitch',
+      id: 'existing-spam',
+      login: 'spammer',
+      user: 'Outro Nome',
+      text: 'Mensagem anterior ao bloqueio',
+      historical: true,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const savedBlocks = await win.webContents.executeJavaScript(
+      `(async()=>{document.getElementById('all-blocked').value='@GlobalBot, globalbot';document.getElementById('twitch-blocked').value='@SpAmMeR';document.getElementById('starvios-blocked').value='SVBot';document.getElementById('save-blocked').click();for(let i=0;i<40&&!document.getElementById('blocked-status').textContent.includes('salvos');i++)await new Promise(r=>setTimeout(r,50));window.__blockedAudioCalls=0;window.__blockedDeliveries=0;HTMLMediaElement.prototype.play=function(){window.__blockedAudioCalls++;return Promise.resolve();};window.kaia.on('message',()=>window.__blockedDeliveries++);return{saved:document.getElementById('blocked-status').textContent.includes('salvos'),removed:!document.querySelector('[data-message-id="existing-spam"]')};})()`,
+    );
+    for (const m of [
+      { platform: 'twitch', login: 'SPAMMER' },
+      { platform: 'kick', login: 'GLOBALBOT' },
+      { platform: 'starvios', login: 'globalbot' },
+      { platform: 'starvios', login: 'SVBOT' },
+    ])
+      emit('message', {
+        ...m,
+        id: 'blocked-' + m.platform + '-' + m.login,
+        user: 'Nome de exibição',
+        text: 'Esta mensagem deve ser bloqueada',
+      });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const rejected = await win.webContents.executeJavaScript(
+      `({delivered:window.__blockedDeliveries,sounds:window.__blockedAudioCalls})`,
+    );
+    emit('message', {
+      platform: 'kick',
+      id: 'allowed-other-platform',
+      login: 'spammer',
+      user: 'Spammer',
+      text: 'Permitido em outra plataforma',
+      historical: true,
+    });
+    emit('message', {
+      platform: 'twitch',
+      id: 'allowed-exact',
+      login: 'spammer_extra',
+      user: 'Spammer_extra',
+      text: 'Nome diferente permanece visível',
+      historical: true,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const allowed = await win.webContents.executeJavaScript(
+      `!!document.querySelector('[data-message-id="allowed-other-platform"]')&&!!document.querySelector('[data-message-id="allowed-exact"]')`,
+    );
+    const blockedDisk = JSON.parse(
+      fs.readFileSync(config(), 'utf8'),
+    ).blockedUsers;
+    await win.reload();
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    const persistedBlocks = await win.webContents.executeJavaScript(
+      `document.getElementById('all-blocked').value==='globalbot'&&document.getElementById('twitch-blocked').value==='spammer'&&document.getElementById('starvios-blocked').value==='svbot'`,
+    );
+    await win.webContents.executeJavaScript(
+      `document.getElementById('blocked-panel').open=true;document.getElementById('blocked-panel').scrollIntoView({block:'start'});`,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    fs.writeFileSync(
+      path.join(__dirname, 'preview-blocked.png'),
+      (await win.webContents.capturePage()).toPNG(),
+    );
+    const blockingPassed =
+      savedBlocks.saved &&
+      savedBlocks.removed &&
+      rejected.delivered === 0 &&
+      rejected.sounds === 0 &&
+      allowed &&
+      persistedBlocks &&
+      blockedDisk.twitch[0] === 'spammer';
     const result = {
-      passed: passed && overlayPassed,
+      passed: passed && overlayPassed && blockingPassed,
       initial,
       changed,
       restored,
       transparent,
       alpha,
       recovered,
+      blocking: { savedBlocks, rejected, allowed, persisted: persistedBlocks },
     };
     fs.writeFileSync(
       path.join(__dirname, 'smoke-result.json'),

@@ -20,3 +20,7 @@ Salvar aparência guarda o visual sem interromper as conexões. Salvar e conecta
 STARVIOS E TRANSPARÊNCIA — VERSÃO 0.3.0
 Starvios tem canal, som e volume independentes. Digite o nome (por exemplo hads) ou o link completo. A conexão pública é acompanhada por leitura periódica de recuperação, com nova sala selecionada quando a live muda. Mensagens anteriores podem aparecer ao conectar, sem disparar som.
 Ao clicar na engrenagem, o programa fica totalmente transparente: sem fundo, bordas, cabeçalho ou botões. Somente o conteúdo do chat permanece visível e os cliques passam para o jogo. Use Ctrl+Shift+F9 ou a bandeja do Windows para retornar às configurações.
+
+CHATS BLOQUEADOS — VERSÃO 0.4.0
+Abra Chats bloqueados e informe os nicks: um por linha, ou separados por vírgula. A lista Todas as plataformas vale para Twitch, Kick e Starvios; as outras listas valem somente para a plataforma indicada. Pode usar @ e qualquer combinação de maiúsculas/minúsculas. A correspondência é pelo nick completo.
+Salvar bloqueios remove as mensagens já visíveis desses nicks, impede novas mensagens e seus sons, sem reconectar os chats. As listas ficam salvas neste computador. Retire o nick e salve para permitir as próximas mensagens novamente. Este é um filtro local: não bane ninguém na Twitch, Kick ou Starvios, nem altera o chat que as outras pessoas veem.

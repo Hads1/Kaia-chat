@@ -482,3 +482,38 @@ body.overlay {
   padding: 0;
   text-shadow: var(--chat-shadow, 0 1px 3px #000);
 }
+.blocked-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 12px 0;
+}
+.blocked-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  color: #b4bbcc;
+}
+.blocked-grid textarea {
+  resize: vertical;
+  min-height: 65px;
+  width: 100%;
+  border: 1px solid #ffffff20;
+  border-radius: 7px;
+  background: #090d16;
+  color: #ecedf4;
+  padding: 8px;
+  font:
+    12px 'Segoe UI',
+    sans-serif;
+}
+#blocked-status {
+  font-size: 10px;
+  color: #8ae0ac;
+  line-height: 1.5;
+  margin-bottom: 0;
+}
+.blocked-grid label:first-child {
+  grid-column: 1/-1;
+}

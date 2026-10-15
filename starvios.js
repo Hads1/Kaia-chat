@@ -24,6 +24,7 @@ function normalizeMessage(row) {
   return {
     id: String(row.id),
     user: profile?.display_name || profile?.username || 'Starvios',
+    login: profile?.username || profile?.display_name || 'Starvios',
     text: row.body,
     color: /^#[a-f0-9]{6}$/i.test(profile?.chat_color)
       ? profile.chat_color
