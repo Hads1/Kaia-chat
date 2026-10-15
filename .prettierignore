@@ -1,0 +1,8 @@
+node_modules
+dist
+portable
+.research
+package-lock.json
+LICENSE
+*.png
+*.wav

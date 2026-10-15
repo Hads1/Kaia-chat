@@ -1,0 +1,23 @@
+{
+  "name": "kaia-chat",
+  "version": "0.3.0",
+  "description": "Overlay de leitura Twitch e Kick",
+  "main": "main.js",
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test.js",
+    "smoke": "electron . --smoke-test",
+    "live": "node live-test.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "package": "node scripts/package.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^42.0.0",
+    "prettier": "^3.9.10"
+  }
+}

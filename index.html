@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' https: data:; style-src 'self'; media-src 'self' file:; script-src 'self'; connect-src 'none'"
+    />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Kaia Chat</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <span class="brand">✦ KAIA <b>CHAT</b></span
+      ><span class="read">SOMENTE LEITURA</span
+      ><button id="minimize" title="Minimizar">−</button
+      ><button id="close" title="Fechar">×</button>
+    </header>
+    <main>
+      <section id="setup">
+        <div class="intro">
+          <h1>Três chats. Seu espaço.</h1>
+          <p>Escolha os canais e dê um som a cada comunidade.</p>
+        </div>
+        <div id="platforms"></div>
+        <div class="appearance">
+          <label
+            >Fundo
+            <input
+              id="background"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05" /></label
+          ><label
+            >Texto
+            <input
+              id="fontSize"
+              type="range"
+              min="12"
+              max="36"
+              step="1" /></label
+          ><label class="toggle"
+            ><input type="checkbox" id="sounds" /> Sons de mensagens</label
+          >
+        </div>
+        <details class="type-panel" id="type-panel">
+          <summary>
+            Fonte, cor e sombra <span>Personalize seu chat</span>
+          </summary>
+          <div class="type-content">
+            <div class="type-grid">
+              <label class="wide"
+                >Fonte instalada<select
+                  id="fontFamily"
+                  aria-label="Fonte do chat"
+                ></select></label
+              ><label
+                >Peso<select id="fontWeight">
+                  <option value="400">Normal</option>
+                  <option value="500">Médio</option>
+                  <option value="600">Seminegrito</option>
+                  <option value="700">Negrito</option>
+                  <option value="800">Extra negrito</option>
+                </select></label
+              ><label class="color-field"
+                >Cor do texto<input type="color" id="textColor" value="#f0f1f7"
+              /></label>
+            </div>
+            <label class="check-row"
+              ><input id="preserveNames" type="checkbox" checked /> Preservar as
+              cores dos nomes de usuário</label
+            >
+            <div class="presets">
+              <button data-preset="classic">Clássico</button
+              ><button data-preset="contrast">Alto contraste</button
+              ><button data-preset="neon">Neon suave</button>
+            </div>
+            <label class="check-row shadow-heading"
+              ><input id="shadowEnabled" type="checkbox" checked /> Sombra do
+              texto</label
+            >
+            <div class="type-grid">
+              <label class="color-field shadow-control"
+                >Cor da sombra<input
+                  type="color"
+                  id="shadowColor"
+                  value="#000000" /></label
+              ><label class="shadow-control"
+                >Intensidade <output data-value="shadowOpacity">85%</output
+                ><input
+                  id="shadowOpacity"
+                  type="range"
+                  min="0"
+                  max="100"
+                  value="85" /></label
+              ><label class="shadow-control"
+                >Desfoque <output data-value="shadowBlur">3 px</output
+                ><input
+                  id="shadowBlur"
+                  type="range"
+                  min="0"
+                  max="24"
+                  value="3" /></label
+              ><label class="shadow-control"
+                >Horizontal <output data-value="shadowX">0 px</output
+                ><input
+                  id="shadowX"
+                  type="range"
+                  min="-12"
+                  max="12"
+                  value="0" /></label
+              ><label class="shadow-control"
+                >Vertical <output data-value="shadowY">1 px</output
+                ><input id="shadowY" type="range" min="-12" max="12" value="1"
+              /></label>
+            </div>
+            <div class="chat-preview">
+              <span class="preview-label"
+                >PRÉVIA AO VIVO · <span id="size-value">18 px</span></span
+              >
+              <div class="preview-message">
+                <span class="platform">T</span
+                ><span class="user preview-twitch">PessoaTwitch: </span>Seu chat
+                com a sua identidade ✨
+              </div>
+              <div class="preview-message">
+                <span class="platform kick">K</span
+                ><span class="user preview-kick">PessoaKick: </span>Legível até
+                por cima do jogo 💚
+              </div>
+            </div>
+            <button id="save-style" class="secondary">Salvar aparência</button>
+            <p id="style-status" role="status"></p>
+            <p class="type-hint">
+              As fontes vêm do seu Windows. Em outro computador, fontes ausentes
+              usam Segoe UI.
+            </p>
+          </div>
+        </details>
+        <button class="primary" id="connect">Salvar e conectar</button>
+        <p id="error" role="alert"></p>
+        <p class="help">
+          Sem login • Emotes nativos + 7TV, BTTV e FFZ públicos
+        </p>
+      </section>
+      <div class="toolbar">
+        <div class="statuses">
+          <span id="twitch-status">Twitch — aguardando</span
+          ><span id="kick-status">Kick — aguardando</span
+          ><span id="starvios-status">Starvios — aguardando</span>
+        </div>
+        <button
+          id="overlay"
+          title="Modo 100% transparente. Ctrl+Shift+F9 para voltar."
+        >
+          ⚙</button
+        ><button id="clear" title="Limpar mensagens">⌫</button
+        ><button
+          id="lock"
+          title="Cliques atravessam a janela. Ctrl+Shift+F9 para voltar."
+        >
+          ◇
+        </button>
+      </div>
+      <section id="feed" aria-live="polite">
+        <div id="empty">
+          <span>✦</span>
+          <p>Seu chat aparece aqui</p>
+          <small>As novas mensagens entram em tempo real.</small>
+        </div>
+      </section>
+      <footer>
+        Ctrl+Shift+F9: configurar · Ctrl+Shift+F10: liberar/bloquear cliques
+      </footer>
+    </main>
+    <script src="typography.js"></script>
+    <script src="renderer.js"></script>
+  </body>
+</html>

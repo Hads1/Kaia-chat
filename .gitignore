@@ -1,0 +1,16 @@
+node_modules/
+dist/
+portable/
+.research/
+*.log
+.env
+.env.*
+!.env.example
+settings.json
+*-result.json
+preview*.png
+VERIFICACAO.txt
+*.zip
+*.sha256.txt
+.DS_Store
+Thumbs.db
