@@ -1,5 +1,5 @@
 (function (scope) {
-  const platforms = ['all', 'twitch', 'kick', 'starvios'];
+  const platforms = ['all', 'twitch', 'kick', 'starvios', 'custom'];
   function normalizeNick(value) {
     return String(value ?? '')
       .trim()

@@ -4,6 +4,7 @@ for (const [platform, label] of Object.entries({
   twitch: 'Somente Twitch',
   kick: 'Somente Kick',
   starvios: 'Somente Starvios',
+  custom: 'Somente personalizado',
 })) {
   const field = document.createElement('label');
   field.textContent = label;
@@ -20,7 +21,7 @@ for (const [platform, label] of Object.entries({
 function readBlockedUsers() {
   return KaiaBlocking.normalizeBlockedUsers(
     Object.fromEntries(
-      ['all', 'twitch', 'kick', 'starvios'].map((p) => [
+      ['all', 'twitch', 'kick', 'starvios', 'custom'].map((p) => [
         p,
         document.getElementById(p + '-blocked').value,
       ]),
@@ -29,7 +30,7 @@ function readBlockedUsers() {
 }
 function setBlockedUsers(lists) {
   activeBlockedUsers = KaiaBlocking.normalizeBlockedUsers(lists);
-  for (const p of ['all', 'twitch', 'kick', 'starvios'])
+  for (const p of ['all', 'twitch', 'kick', 'starvios', 'custom'])
     document.getElementById(p + '-blocked').value =
       activeBlockedUsers[p].join('\n');
   let removed = 0;
@@ -41,6 +42,7 @@ function setBlockedUsers(lists) {
         row.dataset.login,
       )
     ) {
+      row.cancelExpiry?.();
       row.remove();
       removed++;
     }

@@ -1,14 +1,31 @@
 const $ = (s) => document.querySelector(s);
 let settings;
-const maps = { twitch: {}, kick: {}, starvios: {} },
+const messageExpiry = new KaiaTiming.MessageExpiry({
+  onFade: (row, seconds) => {
+    row.style.transition = `opacity ${seconds}s linear`;
+    row.classList.add('message-fading');
+  },
+  onShow: (row) => {
+    row.style.transition = 'none';
+    row.classList.remove('message-fading');
+  },
+  onRemove: (row) => row.remove(),
+});
+const maps = { twitch: {}, kick: {}, starvios: {}, custom: {} },
   seen = new Set(),
-  audio = { twitch: new Audio(), kick: new Audio(), starvios: new Audio() },
-  lastSound = { twitch: 0, kick: 0, starvios: 0 };
-for (const p of ['twitch', 'kick', 'starvios']) {
+  audio = {
+    twitch: new Audio(),
+    kick: new Audio(),
+    starvios: new Audio(),
+    custom: new Audio(),
+  },
+  lastSound = { twitch: 0, kick: 0, starvios: 0, custom: 0 };
+for (const p of ['twitch', 'kick', 'starvios', 'custom']) {
   const card = document.createElement('div');
   card.className = `card ${p}`;
-  card.innerHTML = `<div class="card-top"><span class="name">${{ kick: 'KICK', twitch: 'TWITCH', starvios: 'STARVIOS' }[p]}</span><label><input id="${p}-enabled" type="checkbox" aria-label="Ativar ${p}"> Ativar</label></div><input class="channel" id="${p}-channel" type="text" placeholder="Nome do canal ou link" aria-label="Canal ${p}"><div class="audio"><select id="${p}-sound" aria-label="Som ${p}"></select><button id="${p}-choose">Arquivo…</button><button id="${p}-test">▶ Testar</button></div><label class="volume">Volume <input id="${p}-volume" type="range" min="0" max="1" step="0.05"></label><small id="${p}-emotes" class="help">Emotes aguardando conexão</small>`;
+  card.innerHTML = `<div class="card-top"><span class="name">${{ kick: 'KICK', twitch: 'TWITCH', starvios: 'STARVIOS', custom: 'PERSONALIZADO' }[p]}</span><label><input id="${p}-enabled" type="checkbox" aria-label="Ativar ${p}"> Ativar</label></div><input class="channel" id="${p}-channel" type="text" placeholder="Nome do canal ou link" aria-label="Canal ${p}"><div class="audio"><select id="${p}-sound" aria-label="Som ${p}"></select><button id="${p}-choose">Arquivo…</button><button id="${p}-test">▶ Testar</button></div><label class="volume">Volume <input id="${p}-volume" type="range" min="0" max="1" step="0.05"></label><small id="${p}-emotes" class="help">${p === 'custom' ? 'Mensagens em texto pela API JSON' : 'Emotes aguardando conexão'}</small>`;
   $('#platforms').append(card);
+  if (p === 'custom') installCustomControls(card);
   $(`#${p}-choose`).onclick = async () => {
     const f = await window.kaia.choose(p);
     if (f) {
@@ -34,7 +51,11 @@ for (const p of ['twitch', 'kick', 'starvios']) {
 function apply(s) {
   settings = s;
   setBlockedUsers(s.blockedUsers);
-  for (const p of ['kick', 'twitch', 'starvios']) {
+  setTiming(s.timing);
+  messageExpiry.configure(s.timing);
+  setCustomFields(s.custom);
+  $('#transcript-path').value = s.transcriptPath || '';
+  for (const p of ['kick', 'twitch', 'starvios', 'custom']) {
     $(`#${p}-enabled`).checked = s[p].enabled;
     $(`#${p}-channel`).value = s[p].channel;
     $(`#${p}-volume`).value = s[p].volume;
@@ -90,18 +111,21 @@ $('#connect').onclick = async () => {
       sounds: $('#sounds').checked,
       appearance: readStyle(),
       blockedUsers: readBlockedUsers(),
+      timing: readTiming(),
     };
-    for (const p of ['kick', 'twitch', 'starvios'])
+    for (const p of ['kick', 'twitch', 'starvios', 'custom'])
       s[p] = {
         enabled: $(`#${p}-enabled`).checked,
         channel: $(`#${p}-channel`).value,
         sound: $(`#${p}-sound`).value,
         volume: +$(`#${p}-volume`).value,
       };
+    Object.assign(s.custom, readCustomFields());
     const saved = await window.kaia.save(s);
     maps.twitch = {};
     maps.kick = {};
     maps.starvios = {};
+    maps.custom = {};
     seen.clear();
     apply(saved);
     $('#error').textContent = '';
@@ -195,7 +219,10 @@ window.kaia.on('message', (m) => {
   row.dataset.login = m.login || m.user;
   const badge = document.createElement('span');
   badge.className = 'platform ' + m.platform;
-  badge.textContent = { kick: 'K', twitch: 'T', starvios: 'S' }[m.platform];
+  badge.textContent = { kick: 'K', twitch: 'T', starvios: 'S', custom: 'C' }[
+    m.platform
+  ];
+  badge.title = m.platformName || m.platform;
   const user = document.createElement('span');
   user.className = 'user';
   user.textContent = m.user + ': ';
@@ -203,14 +230,23 @@ window.kaia.on('message', (m) => {
   row.append(badge, user);
   renderText(m, row);
   feed.append(row);
-  while (feed.children.length > 300) feed.firstElementChild.remove();
+  row.cancelExpiry = messageExpiry.add(row);
+  while (feed.children.length > 300) {
+    feed.firstElementChild.cancelExpiry?.();
+    feed.firstElementChild.remove();
+  }
   if (nearBottom) feed.scrollTop = feed.scrollHeight;
   if (!m.historical) play(m.platform);
 });
 window.kaia.on('status', (s) => {
   const el = $(`#${s.platform}-status`);
   el.textContent =
-    { kick: 'Kick', twitch: 'Twitch', starvios: 'Starvios' }[s.platform] +
+    {
+      kick: 'Kick',
+      twitch: 'Twitch',
+      starvios: 'Starvios',
+      custom: settings?.custom?.name || 'Personalizado',
+    }[s.platform] +
     ' · ' +
     s.text;
   el.className = s.state;
@@ -229,6 +265,7 @@ window.kaia.on('settings', (s) => {
     }
   }
   if (s.clear) {
+    messageExpiry.clear();
     $('#feed').replaceChildren();
     seen.clear();
   }
@@ -239,6 +276,8 @@ window.kaia.load().then(apply);
 
 window.kaia.on('remove', (s) => {
   for (const row of document.querySelectorAll('.message'))
-    if (row.dataset.platform === s.platform && row.dataset.messageId === s.id)
+    if (row.dataset.platform === s.platform && row.dataset.messageId === s.id) {
+      row.cancelExpiry?.();
       row.remove();
+    }
 });

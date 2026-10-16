@@ -24,3 +24,11 @@ Ao clicar na engrenagem, o programa fica totalmente transparente: sem fundo, bor
 CHATS BLOQUEADOS — VERSÃO 0.4.0
 Abra Chats bloqueados e informe os nicks: um por linha, ou separados por vírgula. A lista Todas as plataformas vale para Twitch, Kick e Starvios; as outras listas valem somente para a plataforma indicada. Pode usar @ e qualquer combinação de maiúsculas/minúsculas. A correspondência é pelo nick completo.
 Salvar bloqueios remove as mensagens já visíveis desses nicks, impede novas mensagens e seus sons, sem reconectar os chats. As listas ficam salvas neste computador. Retire o nick e salve para permitir as próximas mensagens novamente. Este é um filtro local: não bane ninguém na Twitch, Kick ou Starvios, nem altera o chat que as outras pessoas veem.
+
+TEMPO DAS MENSAGENS — VERSÃO 0.5.0
+Em Tempo das mensagens, defina o tempo em segundos até começar a sumir e a duração do fade. Padrão: 120 segundos visível e mais 2 segundos de fade. Há atalhos de 30s, 1min, 2min e 5min. Cada mensagem tem seu próprio relógio, começando quando aparece no painel. Salvar temporizador aplica a mudança sem reconectar, inclusive às mensagens atuais, respeitando sua idade. Desative a opção para manter o histórico (limite de 300 mensagens).
+
+PLATAFORMA PERSONALIZADA E TXT — VERSÃO 0.6.0
+Antes de conectar, escolha um arquivo no painel Backup do chat em TXT. Sem um arquivo válido, o programa pede o local antes de iniciar a leitura. O conteúdo é acrescentado ao TXT escolhido, inclusive mensagens de nicks ocultos pelo filtro local. Desaparecer da tela não apaga a transcrição. O TXT registra mensagens que o aplicativo efetivamente recebe, não um histórico que o serviço não disponibilizou.
+Personalizado permite configurar nome, canal e endpoint JSON público, com campos da lista, usuário, texto e ID único. Pode usar {channel} na URL. Exemplo: {"messages":[{"id":"1","username":"pessoa","text":"Olá"}]}. Deixe a lista vazia para array na raiz. Um simples link de live ou widget HTML não permite ler qualquer plataforma automaticamente: serviços fechados precisam de adaptador e autorização próprios.
+Pontos de canal e TTS por resgates ainda não estão implementados; o estudo está em docs/RECOMPENSAS.md no código-fonte.

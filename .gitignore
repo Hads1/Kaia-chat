@@ -3,6 +3,7 @@ dist/
 portable/
 .research/
 *.log
+*.txt
 .env
 .env.*
 !.env.example

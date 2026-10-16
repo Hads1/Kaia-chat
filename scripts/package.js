@@ -34,6 +34,11 @@ const source = [
   'appearance.js',
   'blocking.js',
   'blocked-ui.js',
+  'timing.js',
+  'timing-ui.js',
+  'custom.js',
+  'transcript.js',
+  'custom-ui.js',
   'typography.js',
   'smoke.js',
   'live-test.js',
@@ -52,6 +57,7 @@ const source = [
   '.gitattributes',
   'assets',
   'scripts',
+  'docs',
 ];
 for (const file of source)
   fs.cpSync(path.join(root, file), path.join(appDir, file), {
@@ -78,7 +84,7 @@ execFileSync(
   [
     '-NoProfile',
     '-Command',
-    'Add-Type -AssemblyName System.IO.Compression.FileSystem; [IO.Compression.ZipFile]::CreateFromDirectory($env:KAIA_STAGE,$env:KAIA_ZIP,[IO.Compression.CompressionLevel]::Optimal,$true)',
+    "Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; $root=(Get-Item -LiteralPath $env:KAIA_STAGE).FullName; $base=[IO.Path]::GetFileName($root); $output=[IO.File]::Open($env:KAIA_ZIP,[IO.FileMode]::CreateNew); $archive=[IO.Compression.ZipArchive]::new($output,[IO.Compression.ZipArchiveMode]::Create); try { Get-ChildItem -LiteralPath $root -Recurse -File | ForEach-Object { $entry=$base+'/'+$_.FullName.Substring($root.Length+1).Replace([char]92,[char]47); [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive,$_.FullName,$entry,[IO.Compression.CompressionLevel]::Optimal) | Out-Null } } finally { $archive.Dispose(); $output.Dispose() }",
   ],
   {
     env: { ...process.env, KAIA_STAGE: stage, KAIA_ZIP: zip },

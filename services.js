@@ -40,6 +40,19 @@ class Chats {
       } else
         this.emit('status', { platform: p, text: 'Desativado', state: 'off' });
     }
+    if (settings.custom?.enabled) {
+      const generation = this.generation;
+      this.sessions.push(
+        require('./custom').connectCustom(settings.custom, (type, data) => {
+          if (generation === this.generation) this.emit(type, data);
+        }),
+      );
+    } else
+      this.emit('status', {
+        platform: 'custom',
+        text: 'Desativado',
+        state: 'off',
+      });
   }
   async connect(platform, name, generation) {
     let socket,

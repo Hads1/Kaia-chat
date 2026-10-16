@@ -517,3 +517,74 @@ body.overlay {
 .blocked-grid label:first-child {
   grid-column: 1/-1;
 }
+.message {
+  opacity: 1;
+}
+.message.message-fading {
+  opacity: 0;
+}
+.timing-fields {
+  margin: 12px 0;
+}
+.timing-fields input[type='number'] {
+  width: 100%;
+  padding: 8px;
+  background: #090d16;
+  color: #ecedf4;
+  border: 1px solid #ffffff20;
+  border-radius: 7px;
+  font:
+    12px 'Segoe UI',
+    sans-serif;
+}
+#save-timing {
+  margin-top: 12px;
+}
+#expiry-status {
+  font-size: 10px;
+  color: #8ae0ac;
+  line-height: 1.5;
+}
+.custom .name {
+  color: #ffb38a;
+}
+.platform.custom {
+  background: #ffb38a25;
+  color: #ffbf9f;
+}
+.custom-config summary {
+  font-size: 11px;
+  cursor: pointer;
+  margin-top: 9px;
+  color: #c5cedf;
+}
+.custom-config label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11px;
+  color: #aab3c6;
+  margin-top: 9px;
+}
+.custom-config input[type='number'] {
+  width: 100%;
+  padding: 7px;
+  border: 1px solid #ffffff20;
+  border-radius: 7px;
+  background: #090d16;
+  color: #ecedf4;
+}
+#choose-transcript {
+  margin-top: 9px;
+}
+#transcript-status {
+  font-size: 10px;
+  line-height: 1.5;
+  color: #aab3c6;
+}
+#transcript-status.ok {
+  color: #8ae0ac;
+}
+#transcript-status.error {
+  color: #ffa4a4;
+}

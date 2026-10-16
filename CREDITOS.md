@@ -1,4 +1,4 @@
-# Kaia Chat 0.1
+# Kaia Chat
 
 Implementação nova para leitura dos chats públicos Twitch e Kick.
 

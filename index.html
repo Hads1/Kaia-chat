@@ -20,9 +20,34 @@
     <main>
       <section id="setup">
         <div class="intro">
-          <h1>Três chats. Seu espaço.</h1>
+          <h1>Seus chats. Seu espaço.</h1>
           <p>Escolha os canais e dê um som a cada comunidade.</p>
         </div>
+        <details class="type-panel" id="transcript-panel" open>
+          <summary>
+            Backup do chat em TXT
+            <span>Histórico completo, mesmo quando some da tela</span>
+          </summary>
+          <div class="type-content">
+            <input
+              id="transcript-path"
+              type="text"
+              readonly
+              placeholder="Escolha onde salvar a transcrição"
+            /><button id="choose-transcript" class="secondary">
+              Escolher arquivo TXT…
+            </button>
+            <p id="transcript-status" role="status">
+              Escolha um TXT antes de conectar. As mensagens serão
+              acrescentadas, sem apagar o arquivo.
+            </p>
+            <p class="type-hint">
+              O backup inclui mensagens recebidas de todas as plataformas,
+              inclusive os nicks ocultos por Chats bloqueados. O fade só limpa a
+              tela.
+            </p>
+          </div>
+        </details>
         <div id="platforms"></div>
         <div class="appearance">
           <label
@@ -60,6 +85,52 @@
               Salvar bloqueios
             </button>
             <p id="blocked-status" role="status"></p>
+          </div>
+        </details>
+        <details class="type-panel" id="timing-panel">
+          <summary>
+            Tempo das mensagens
+            <span>Chat fade time · mantenha o painel limpo</span>
+          </summary>
+          <div class="type-content">
+            <label class="check-row"
+              ><input id="expiry-enabled" type="checkbox" checked /> Remover
+              mensagens automaticamente</label
+            >
+            <div class="type-grid timing-fields">
+              <label
+                >Tempo na tela (segundos)<input
+                  id="expiry-seconds"
+                  type="number"
+                  min="1"
+                  max="86400"
+                  value="120"
+              /></label>
+              <label
+                >Duração do fade (segundos)<input
+                  id="expiry-fade"
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  value="2"
+              /></label>
+            </div>
+            <div class="presets">
+              <button data-expiry="30">30 segundos</button
+              ><button data-expiry="60">1 minuto</button
+              ><button data-expiry="120">2 minutos</button
+              ><button data-expiry="300">5 minutos</button>
+            </div>
+            <p id="expiry-summary" class="type-hint"></p>
+            <p class="type-hint">
+              Cada mensagem tem seu próprio relógio, contado a partir da
+              exibição. Desative para manter o histórico na tela.
+            </p>
+            <button id="save-timing" class="secondary">
+              Salvar temporizador
+            </button>
+            <p id="expiry-status" role="status"></p>
           </div>
         </details>
         <details class="type-panel" id="type-panel">
@@ -166,7 +237,8 @@
         <div class="statuses">
           <span id="twitch-status">Twitch — aguardando</span
           ><span id="kick-status">Kick — aguardando</span
-          ><span id="starvios-status">Starvios — aguardando</span>
+          ><span id="starvios-status">Starvios — aguardando</span
+          ><span id="custom-status">Personalizado — aguardando</span>
         </div>
         <button
           id="overlay"
@@ -193,7 +265,10 @@
       </footer>
     </main>
     <script src="blocking.js"></script>
+    <script src="timing.js"></script>
     <script src="blocked-ui.js"></script>
+    <script src="timing-ui.js"></script>
+    <script src="custom-ui.js"></script>
     <script src="typography.js"></script>
     <script src="renderer.js"></script>
   </body>

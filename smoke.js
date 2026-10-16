@@ -1,9 +1,9 @@
 const fs = require('fs');
 const path = require('path');
-module.exports = async (win, app, emit, config) => {
+module.exports = async (win, app, emit, config, transcript) => {
   try {
     const initial = await win.webContents.executeJavaScript(
-      `({rows:document.querySelectorAll('.message').length,fresh:['twitch','kick','starvios'].every(p=>document.getElementById(p+'-channel').value===''),starvios:!!document.getElementById('starvios-sound'),fonts:document.querySelector('#fontFamily').options.length})`,
+      `({rows:document.querySelectorAll('.message').length,fresh:['twitch','kick','starvios','custom'].every(p=>document.getElementById(p+'-channel').value===''),starvios:!!document.getElementById('starvios-sound'),custom:!!document.getElementById('custom-url'),fonts:document.querySelector('#fontFamily').options.length})`,
     );
     const changed = await win.webContents.executeJavaScript(
       `(async()=>{const change=(id,value)=>{const el=document.getElementById(id);if(el.type==='checkbox')el.checked=value;else el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));};change('fontFamily','Arial');change('fontWeight',700);change('textColor','#fef08a');change('preserveNames',false);change('shadowColor','#000000');change('shadowBlur',8);change('shadowX',2);change('shadowY',3);change('shadowOpacity',90);const row=document.querySelector('.message');const c=getComputedStyle(row);const result={family:c.fontFamily,color:c.color,weight:c.fontWeight,shadow:c.textShadow,name:getComputedStyle(row.querySelector('.user')).color};change('shadowEnabled',false);result.disabledShadow=getComputedStyle(row).textShadow;change('shadowEnabled',true);document.getElementById('save-style').click();for(let i=0;i<40&&!document.getElementById('style-status').textContent.includes('salva');i++)await new Promise(r=>setTimeout(r,50));result.saved=document.getElementById('style-status').textContent.includes('salva');return result;})()`,
@@ -44,6 +44,7 @@ module.exports = async (win, app, emit, config) => {
       initial.rows === 2 &&
       initial.fresh &&
       initial.starvios &&
+      initial.custom &&
       initial.fonts >= 8 &&
       changed.family.includes('Arial') &&
       changed.color === 'rgb(254, 240, 138)' &&
@@ -156,8 +157,83 @@ module.exports = async (win, app, emit, config) => {
       allowed &&
       persistedBlocks &&
       blockedDisk.twitch[0] === 'spammer';
+    const timingSaved = await win.webContents.executeJavaScript(
+      `(async()=>{document.getElementById('expiry-enabled').checked=true;document.getElementById('expiry-seconds').value='1';document.getElementById('expiry-fade').value='0.4';await document.getElementById('save-timing').onclick();return document.getElementById('expiry-status').textContent.includes('salvo');})()`,
+    );
+    emit('message', {
+      platform: 'kick',
+      id: 'expiry-demo',
+      login: 'expirytest',
+      user: 'TesteFade',
+      text: 'Mensagem com tempo individual',
+      historical: true,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 1150));
+    const fading = await win.webContents.executeJavaScript(
+      `(()=>{const row=document.querySelector('[data-message-id="expiry-demo"]');return !!row&&row.classList.contains('message-fading')&&Number(getComputedStyle(row).opacity)<1;})()`,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    const expired = await win.webContents.executeJavaScript(
+      `!document.querySelector('[data-message-id="expiry-demo"]')`,
+    );
+    await win.reload();
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    const timingPersisted = await win.webContents.executeJavaScript(
+      `document.getElementById('expiry-enabled').checked&&document.getElementById('expiry-seconds').value==='1'&&document.getElementById('expiry-fade').value==='0.4'`,
+    );
+    await win.webContents.executeJavaScript(
+      `(async()=>{document.getElementById('expiry-enabled').checked=false;await document.getElementById('save-timing').onclick();})()`,
+    );
+    emit('message', {
+      platform: 'kick',
+      id: 'expiry-disabled',
+      user: 'TesteSemFade',
+      text: 'Permanece quando o temporizador está desativado',
+      historical: true,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 1600));
+    const retained = await win.webContents.executeJavaScript(
+      `!!document.querySelector('[data-message-id="expiry-disabled"]')`,
+    );
+    await win.webContents.executeJavaScript(`window.kaia.window('clear')`);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const timersCleared = await win.webContents.executeJavaScript(
+      `messageExpiry.entries.size===0`,
+    );
+    await win.webContents.executeJavaScript(
+      `document.getElementById('timing-panel').open=true;document.getElementById('timing-panel').scrollIntoView({block:'start'});`,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    fs.writeFileSync(
+      path.join(__dirname, 'preview-timing.png'),
+      (await win.webContents.capturePage()).toPNG(),
+    );
+    const timingPassed =
+      timingSaved &&
+      fading &&
+      expired &&
+      timingPersisted &&
+      retained &&
+      timersCleared;
+    const customSaved = await win.webContents.executeJavaScript(
+      `(async()=>{const data=await window.kaia.load();for(const p of ['twitch','kick','starvios','custom'])data[p].enabled=false;Object.assign(data.custom,{name:'Minha plataforma',channel:'canal',url:'https://example.com/chat/{channel}',itemsPath:'data.messages',userPath:'sender.nick',textPath:'body',idPath:'id'});const saved=await window.kaia.save(data);apply(saved);return document.getElementById('custom-name').value==='Minha plataforma'&&document.getElementById('custom-itemsPath').value==='data.messages'&&!!document.getElementById('transcript-path').value;})()`,
+    );
+    await transcript.flush();
+    const backup = fs.readFileSync(
+      JSON.parse(fs.readFileSync(config(), 'utf8')).transcriptPath,
+      'utf8',
+    );
+    const backupPassed =
+      backup.includes('Esta mensagem deve ser bloqueada') &&
+      backup.includes('Mensagem com tempo individual');
     const result = {
-      passed: passed && overlayPassed && blockingPassed,
+      passed:
+        passed &&
+        overlayPassed &&
+        blockingPassed &&
+        timingPassed &&
+        backupPassed &&
+        customSaved,
       initial,
       changed,
       restored,
@@ -165,6 +241,16 @@ module.exports = async (win, app, emit, config) => {
       alpha,
       recovered,
       blocking: { savedBlocks, rejected, allowed, persisted: persistedBlocks },
+      timing: {
+        saved: timingSaved,
+        fading,
+        expired,
+        persisted: timingPersisted,
+        retained,
+        timersCleared,
+      },
+      backup: { passed: backupPassed, messages: transcript.count },
+      customSaved,
     };
     fs.writeFileSync(
       path.join(__dirname, 'smoke-result.json'),
