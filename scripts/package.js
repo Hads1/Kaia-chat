@@ -26,6 +26,11 @@ const appDir = path.join(stage, 'resources/app');
 fs.mkdirSync(path.join(appDir, 'node_modules'), { recursive: true });
 const source = [
   'main.js',
+  'widget-server.js',
+  'widget.html',
+  'widget.js',
+  'widget.css',
+  'widget-ui.js',
   'preload.js',
   'renderer.js',
   'services.js',
@@ -77,7 +82,7 @@ fs.copyFileSync(
 );
 fs.writeFileSync(
   path.join(stage, 'COMECE-AQUI.txt'),
-  `KAIA CHAT ${pkg.version} — WINDOWS 10/11 x64\r\n\r\nExtraia o ZIP inteiro e abra KaiaChat.exe.\r\nConfigure Twitch, Kick e/ou Starvios com seus próprios canais.\r\nSelecione som/volume por plataforma e clique em Salvar e conectar.\r\nFontes, cores e sombras ficam em Fonte, cor e sombra.\r\nA engrenagem ativa o modo 100% transparente, apenas mensagens.\r\nCtrl+Shift+F9 retorna às configurações e libera os cliques.\r\n\r\nSem login e somente leitura. Requer internet.\r\nCada computador salva suas próprias preferências.\r\nNão envie somente o EXE; compartilhe o ZIP completo.\r\nCódigo-fonte em resources/app. Licença GPLv3 e créditos incluídos.\r\n`,
+  `KAIA CHAT ${pkg.version} — WINDOWS 10/11 x64\r\n\r\nExtraia o ZIP inteiro e abra KaiaChat.exe.\r\nConfigure Twitch, Kick e/ou Starvios com seus próprios canais.\r\nSelecione som/volume por plataforma e clique em Salvar e conectar.\r\nFontes, cores e sombras ficam em Fonte, cor e sombra. A aba Widget fornece URL para OBS, layouts e CSS.\r\nA engrenagem recolhe apenas as configurações. O último botão oculta a janela inteira.\r\nCtrl+Shift+F9 retorna às configurações e libera os cliques.\r\n\r\nSem login e somente leitura. Requer internet.\r\nCada computador salva suas próprias preferências.\r\nNão envie somente o EXE; compartilhe o ZIP completo.\r\nCódigo-fonte em resources/app. Licença GPLv3 e créditos incluídos.\r\n`,
 );
 execFileSync(
   'powershell.exe',

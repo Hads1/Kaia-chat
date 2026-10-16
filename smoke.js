@@ -215,6 +215,85 @@ module.exports = async (win, app, emit, config, transcript) => {
       timingPersisted &&
       retained &&
       timersCleared;
+    const controls = await win.webContents.executeJavaScript(`(async()=>{
+      document.getElementById('settings-toggle').click(); await new Promise(r=>setTimeout(r,100));
+      const collapsed=getComputedStyle(document.getElementById('setup')).display==='none'&&getComputedStyle(document.querySelector('.toolbar')).display!=='none'&&!document.body.classList.contains('overlay');
+      window.kaia.window('restore'); await new Promise(r=>setTimeout(r,100));
+      document.getElementById('tab-widget').click();
+      document.getElementById('widget-layout').value='cards'; document.getElementById('widget-css').value='.message { border-radius: 19px; }';
+      await document.getElementById('save-widget').onclick();
+      const saved=await window.kaia.load();
+      return {collapsed,widget:saved.widget.layout==='cards'&&saved.widget.css.includes('19px'),url:saved.widgetUrl};
+    })()`);
+    await win.webContents.executeJavaScript(`window.kaia.window('hide')`);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    controls.hidden = !win.isVisible();
+    await win.webContents.executeJavaScript(`window.kaia.window('restore')`);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    controls.restored =
+      win.isVisible() &&
+      (await win.webContents.executeJavaScript(
+        `!document.body.classList.contains('settings-collapsed')&&!document.body.classList.contains('widget-tab')`,
+      ));
+    const { BrowserWindow } = require('electron');
+    const widgetTest = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        sandbox: true,
+        nodeIntegration: false,
+        backgroundThrottling: false,
+      },
+    });
+    widgetTest.webContents.on('console-message', (_event, details) =>
+      console.log('WIDGET:', details.message),
+    );
+    await widgetTest.loadURL(controls.url);
+    emit('message', {
+      platform: 'twitch',
+      id: 'widget-native',
+      user: 'WidgetTest',
+      text: 'Kappa <script>teste</script>',
+      emotes: '25:0-4',
+      historical: true,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    controls.rendered = await widgetTest.webContents.executeJavaScript(
+      `(()=>{const row=document.querySelector('[data-id="widget-native"]');return !!row&&row.querySelector('img')?.alt==='Kappa'&&row.querySelector('.message-text').textContent.includes('<script>')&&document.body.dataset.layout==='cards'&&getComputedStyle(row).borderRadius==='19px';})()`,
+    );
+    await win.webContents.executeJavaScript(
+      `document.getElementById('tab-widget').click()`,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    const previewFrame = win.webContents.mainFrame.frames.find(
+      (frame) => frame.url === controls.url,
+    );
+    controls.preview =
+      !!previewFrame &&
+      (await previewFrame.executeJavaScript(
+        `document.body.dataset.layout==='cards'&&!!document.querySelector('[data-id="widget-native"]')`,
+      ));
+    fs.writeFileSync(
+      path.join(__dirname, 'preview-widget-editor.png'),
+      (await win.webContents.capturePage()).toPNG(),
+    );
+    await win.webContents.executeJavaScript(
+      `document.getElementById('tab-chat').click()`,
+    );
+    controls.widgetDetails = await widgetTest.webContents.executeJavaScript(
+      `({html:document.getElementById('feed').innerHTML,layout:document.body.dataset.layout,config:typeof config==='undefined'?null:config,css:document.getElementById('custom-css').textContent})`,
+    );
+    fs.writeFileSync(
+      path.join(__dirname, 'preview-widget.png'),
+      (await widgetTest.webContents.capturePage()).toPNG(),
+    );
+    widgetTest.destroy();
+    const widgetPassed =
+      controls.collapsed &&
+      controls.widget &&
+      controls.hidden &&
+      controls.restored &&
+      controls.preview &&
+      controls.rendered;
     const customSaved = await win.webContents.executeJavaScript(
       `(async()=>{const data=await window.kaia.load();for(const p of ['twitch','kick','starvios','custom'])data[p].enabled=false;Object.assign(data.custom,{name:'Minha plataforma',channel:'canal',url:'https://example.com/chat/{channel}',itemsPath:'data.messages',userPath:'sender.nick',textPath:'body',idPath:'id'});const saved=await window.kaia.save(data);apply(saved);return document.getElementById('custom-name').value==='Minha plataforma'&&document.getElementById('custom-itemsPath').value==='data.messages'&&!!document.getElementById('transcript-path').value;})()`,
     );
@@ -233,6 +312,7 @@ module.exports = async (win, app, emit, config, transcript) => {
         blockingPassed &&
         timingPassed &&
         backupPassed &&
+        widgetPassed &&
         customSaved,
       initial,
       changed,
@@ -251,6 +331,7 @@ module.exports = async (win, app, emit, config, transcript) => {
       },
       backup: { passed: backupPassed, messages: transcript.count },
       customSaved,
+      controls,
     };
     fs.writeFileSync(
       path.join(__dirname, 'smoke-result.json'),

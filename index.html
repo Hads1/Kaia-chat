@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; img-src 'self' https: data:; style-src 'self'; media-src 'self' file:; script-src 'self'; connect-src 'none'"
+      content="default-src 'self'; img-src 'self' https: data:; style-src 'self'; media-src 'self' file:; script-src 'self'; connect-src 'none'; frame-src http://127.0.0.1:*"
     />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Kaia Chat</title>
@@ -18,6 +18,64 @@
       ><button id="close" title="Fechar">×</button>
     </header>
     <main>
+      <nav id="tabs" aria-label="Configurações">
+        <button id="tab-chat" aria-pressed="true">Chat</button
+        ><button id="tab-widget" aria-pressed="false">Widget</button>
+      </nav>
+      <section id="widget-panel" hidden>
+        <h1>Widget para sua live</h1>
+        <p>
+          Adicione a URL como Fonte de navegador no OBS. Mantenha o Kaia Chat
+          aberto, mesmo com a janela oculta.
+        </p>
+        <label>URL do widget<input id="widget-url" readonly /></label>
+        <div class="widget-actions">
+          <button id="copy-widget">Copiar URL</button
+          ><button id="popup-widget">Abrir pop-up</button>
+        </div>
+        <label
+          >Layout<select id="widget-layout">
+            <option value="classic">Clássico</option>
+            <option value="cards">Cartões</option>
+            <option value="compact">Compacto</option>
+          </select></label
+        >
+        <label
+          >Tamanho da fonte (px)<input
+            id="widget-font"
+            type="number"
+            min="12"
+            max="72"
+            value="24"
+        /></label>
+        <label
+          >CSS personalizado<textarea
+            id="widget-css"
+            rows="9"
+            spellcheck="false"
+            placeholder=".message { border-radius: 12px; }"
+          ></textarea>
+        </label>
+        <p>
+          Seletores: #feed, .message, .user, .message-text, .platform e
+          [data-platform="kick"]. O tempo das mensagens segue a aba Chat. O CSS
+          é aplicado ao salvar.
+        </p>
+        <button id="save-widget" class="primary">
+          Salvar widget e atualizar prévia
+        </button>
+        <p id="widget-status" role="status"></p>
+        <iframe
+          id="widget-preview"
+          title="Prévia do widget"
+          sandbox="allow-scripts allow-same-origin"
+        ></iframe>
+        <p>
+          Fundo transparente na transmissão. A URL permanece neste computador;
+          se a porta estiver ocupada por outro aplicativo, copie a nova URL para
+          o OBS. Sugestão de tamanho no OBS: 500 × 800.
+        </p>
+      </section>
       <section id="setup">
         <div class="intro">
           <h1>Seus chats. Seu espaço.</h1>
@@ -240,17 +298,14 @@
           ><span id="starvios-status">Starvios — aguardando</span
           ><span id="custom-status">Personalizado — aguardando</span>
         </div>
-        <button
-          id="overlay"
-          title="Modo 100% transparente. Ctrl+Shift+F9 para voltar."
-        >
+        <button id="settings-toggle" title="Mostrar ou esconder configurações">
           ⚙</button
         ><button id="clear" title="Limpar mensagens">⌫</button
         ><button
-          id="lock"
-          title="Cliques atravessam a janela. Ctrl+Shift+F9 para voltar."
+          id="hide"
+          title="Ocultar janela inteira. Ctrl+Shift+F9 para restaurar."
         >
-          ◇
+          ◉
         </button>
       </div>
       <section id="feed" aria-live="polite">
@@ -271,5 +326,6 @@
     <script src="custom-ui.js"></script>
     <script src="typography.js"></script>
     <script src="renderer.js"></script>
+    <script src="widget-ui.js"></script>
   </body>
 </html>

@@ -1,6 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('kaia', {
   load: () => ipcRenderer.invoke('load'),
+  saveWidget: (s) => ipcRenderer.invoke('save-widget', s),
+  copyWidget: () => ipcRenderer.invoke('copy-widget'),
+  popupWidget: () => ipcRenderer.invoke('popup-widget'),
   save: (s) => ipcRenderer.invoke('save', s),
   saveAppearance: (s) => ipcRenderer.invoke('save-appearance', s),
   saveBlocked: (s) => ipcRenderer.invoke('save-blocked', s),

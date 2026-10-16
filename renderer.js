@@ -257,6 +257,8 @@ window.kaia.on('emotes', (s) => {
     `${s.count} emotes externos${s.failed ? ' · alguns serviços indisponíveis' : ''}`;
 });
 window.kaia.on('settings', (s) => {
+  if ('collapsed' in s)
+    document.body.classList.toggle('settings-collapsed', s.collapsed);
   if ('overlay' in s) {
     document.body.classList.toggle('overlay', s.overlay);
     if (s.overlay) {
@@ -270,8 +272,9 @@ window.kaia.on('settings', (s) => {
     seen.clear();
   }
 });
-for (const a of ['close', 'minimize', 'overlay', 'clear', 'lock'])
+for (const a of ['close', 'minimize', 'clear', 'hide'])
   $('#' + a).onclick = () => window.kaia.window(a);
+$('#settings-toggle').onclick = () => window.kaia.window('settings');
 window.kaia.load().then(apply);
 
 window.kaia.on('remove', (s) => {

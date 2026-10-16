@@ -2,7 +2,7 @@
 
 Abra KaiaChat.exe na pasta extraída do ZIP (ou ABRIR.cmd na pasta de desenvolvimento). Configure Twitch, Kick e Starvios separadamente com nome ou URL. Ative os canais desejados, selecione áudio e volume para cada um e clique em Salvar e conectar. Arquivo permite escolher WAV, MP3, OGG ou M4A. Testar toca somente o áudio local.
 
-Engrenagem alterna o modo overlay. Arraste pelo cabeçalho e redimensione pelas bordas. Diamante permite que cliques atravessem a janela. Ctrl+Shift+F9 sempre retorna às configurações e libera cliques. Ctrl+Shift+F10 alterna passagem de cliques. O ícone na bandeja também permite recuperar a janela. Use jogos em janela sem borda; tela cheia exclusiva pode cobrir overlays.
+Engrenagem esconde somente as configurações, preservando a janela normal e seus botões. O último botão oculta a janela inteira. Ctrl+Shift+F9 sempre recupera a janela, as configurações e os cliques. Arraste pelo cabeçalho e redimensione pelas bordas. Ctrl+Shift+F10 alterna passagem de cliques no modo transparente opcional. O ícone na bandeja também permite recuperar a janela.
 
 Somente leitura: não pede contas e não envia mensagens. Twitch usa leitura IRC anônima, sujeita à disponibilidade do serviço. Kick descobre o provedor atual, suporta Centrifugo e Pusher e renova a conexão antes do token temporário expirar. Tokens ficam somente na memória. Endpoints do site Kick podem mudar.
 
@@ -19,7 +19,7 @@ Salvar aparência guarda o visual sem interromper as conexões. Salvar e conecta
 
 STARVIOS E TRANSPARÊNCIA — VERSÃO 0.3.0
 Starvios tem canal, som e volume independentes. Digite o nome (por exemplo hads) ou o link completo. A conexão pública é acompanhada por leitura periódica de recuperação, com nova sala selecionada quando a live muda. Mensagens anteriores podem aparecer ao conectar, sem disparar som.
-Ao clicar na engrenagem, o programa fica totalmente transparente: sem fundo, bordas, cabeçalho ou botões. Somente o conteúdo do chat permanece visível e os cliques passam para o jogo. Use Ctrl+Shift+F9 ou a bandeja do Windows para retornar às configurações.
+O modo transparente com passagem de cliques permanece disponível por Ctrl+Shift+F10. Desde a versão 0.7.0, a engrenagem apenas recolhe os painéis, sem mudar a transparência. Use Ctrl+Shift+F9 ou a bandeja para recuperar todos os controles.
 
 CHATS BLOQUEADOS — VERSÃO 0.4.0
 Abra Chats bloqueados e informe os nicks: um por linha, ou separados por vírgula. A lista Todas as plataformas vale para Twitch, Kick e Starvios; as outras listas valem somente para a plataforma indicada. Pode usar @ e qualquer combinação de maiúsculas/minúsculas. A correspondência é pelo nick completo.
@@ -32,3 +32,7 @@ PLATAFORMA PERSONALIZADA E TXT — VERSÃO 0.6.0
 Antes de conectar, escolha um arquivo no painel Backup do chat em TXT. Sem um arquivo válido, o programa pede o local antes de iniciar a leitura. O conteúdo é acrescentado ao TXT escolhido, inclusive mensagens de nicks ocultos pelo filtro local. Desaparecer da tela não apaga a transcrição. O TXT registra mensagens que o aplicativo efetivamente recebe, não um histórico que o serviço não disponibilizou.
 Personalizado permite configurar nome, canal e endpoint JSON público, com campos da lista, usuário, texto e ID único. Pode usar {channel} na URL. Exemplo: {"messages":[{"id":"1","username":"pessoa","text":"Olá"}]}. Deixe a lista vazia para array na raiz. Um simples link de live ou widget HTML não permite ler qualquer plataforma automaticamente: serviços fechados precisam de adaptador e autorização próprios.
 Pontos de canal e TTS por resgates ainda não estão implementados; o estudo está em docs/RECOMPENSAS.md no código-fonte.
+
+WIDGET PARA OBS — VERSÃO 0.7.0
+Abra a aba Widget, escolha Clássico, Cartões ou Compacto, ajuste o tamanho e edite o CSS. Salvar widget atualiza a prévia e a transmissão. Copiar URL fornece o endereço para uma Fonte de navegador do OBS, com fundo transparente (sugestão: 500 × 800). Abrir pop-up mostra outra janela do widget. Veja exemplos de CSS no README.
+O aplicativo precisa continuar aberto no mesmo computador do OBS. Ocultar a janela mantém widget, conexões e TXT funcionando. Bloqueios, exclusões, limpeza e tempo das mensagens são compartilhados, sem duplicar os áudios. A URL fica salva neste computador; se a porta estiver ocupada, copie a nova URL mostrada no aplicativo.

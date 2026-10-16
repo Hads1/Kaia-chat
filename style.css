@@ -5,6 +5,77 @@
   --background: 0.8;
   --font: 18px;
 }
+[hidden] {
+  display: none !important;
+}
+#tabs {
+  display: flex;
+  gap: 8px;
+  padding: 10px 20px;
+}
+#tabs [aria-pressed='true'] {
+  background: #6d4cb4;
+}
+#widget-panel {
+  overflow-y: auto;
+  padding: 12px 20px;
+  flex: 1;
+}
+#widget-panel p {
+  font-size: 12px;
+  color: #b1b8cb;
+  line-height: 1.5;
+}
+#widget-panel label {
+  display: block;
+  margin: 12px 0;
+  font-size: 13px;
+}
+#widget-panel input,
+#widget-panel select,
+#widget-panel textarea {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+}
+#widget-css {
+  background: #11131c;
+  color: #e9e8f8;
+  padding: 10px;
+  border: 1px solid #ffffff30;
+  border-radius: 8px;
+  resize: vertical;
+  font:
+    13px Consolas,
+    monospace;
+}
+#widget-preview {
+  width: 100%;
+  height: 230px;
+  border: 1px solid #ffffff30;
+  background: repeating-conic-gradient(#292d3a 0% 25%, #202430 0% 50%) 0 0 /
+    20px 20px;
+}
+.widget-actions {
+  display: flex;
+  gap: 8px;
+}
+body.widget-tab #setup,
+body.widget-tab #feed {
+  display: none;
+}
+body.settings-collapsed #setup,
+body.settings-collapsed #widget-panel,
+body.settings-collapsed #tabs {
+  display: none !important;
+}
+body.settings-collapsed #feed {
+  display: block;
+}
+.overlay #tabs,
+.overlay #widget-panel {
+  display: none !important;
+}
 * {
   box-sizing: border-box;
 }

@@ -16,12 +16,37 @@ O aplicativo não envia mensagens. A leitura pública depende da disponibilidade
 - Sons incluídos e seleção de arquivos WAV, MP3, OGG ou M4A.
 - Fontes instaladas, tamanho, peso, cor, sombra e prévia ao vivo.
 - Emotes nativos e conjuntos públicos disponíveis de 7TV, BetterTTV, FrankerFaceZ e Starvios.
-- Modo totalmente transparente: apenas mensagens, sem fundo, bordas ou botões; os cliques passam para o jogo.
+- Aba **Widget**: URL local para OBS, pop-up, layouts Clássico/Cartões/Compacto e CSS personalizado.
+- Engrenagem recolhe somente as configurações; o último botão oculta a janela inteira. Ctrl+Shift+F9 restaura a janela e os controles.
 - Reconexão automática, controle de duplicatas e limite de 300 mensagens.
 - **Chats bloqueados**: listas globais ou por plataforma, sem exibir mensagens nem tocar áudio dos nicks bloqueados.
 - **Tempo das mensagens (chat fade time)**: duração individual e fade configuráveis, com padrão de 2 minutos mais 2 segundos de fade.
 - **Backup TXT**: transcrição automática em UTF-8 no arquivo escolhido, preservada mesmo depois do fade.
 - **Plataforma personalizada**: endpoint JSON público, campos configuráveis, canal, nome e áudio próprios.
+
+### Widget para OBS — versão 0.7.0
+
+Na aba **Widget**, escolha layout e tamanho da fonte, edite o CSS e clique em **Salvar widget e atualizar prévia**. Copie a URL e adicione uma **Fonte de navegador** no OBS, com tamanho sugerido de 500 × 800. O fundo é transparente. **Abrir pop-up** mostra o widget em outra janela. Os seletores disponíveis são `#feed`, `.message`, `.user`, `.message-text`, `.platform` e `[data-platform="kick"]` (também twitch, starvios e custom).
+
+```css
+.message {
+  background: #151525dd;
+  padding: 12px;
+  border-radius: 14px;
+}
+.user {
+  color: #fef08a !important;
+}
+[data-platform='kick'] {
+  border-left: 4px solid #53fc18;
+}
+```
+
+Fonte, cor e sombra seguem a aparência do Chat; layout, tamanho e CSS pertencem ao Widget. O widget respeita bloqueios, exclusões, limpeza e temporizador, sem duplicar áudio. As mudanças salvas atualizam OBS e prévia. O Kaia Chat precisa continuar aberto; ocultar a janela mantém as conexões, o TXT e o widget ativos. Mensagens vencidas não reaparecem ao recarregar a fonte.
+
+A URL funciona no mesmo computador, sem hospedagem nem login, em servidor ligado somente a 127.0.0.1. O endereço contém um identificador aleatório persistente neste computador. A porta padrão é 19347; se estiver ocupada, o aplicativo escolhe outra e será preciso copiar a URL atualizada para o OBS. Configurações privadas e caminhos de arquivos não são servidos pelo widget. O CSS é de sua autoria; apenas CSS é aceito, sem editor de JavaScript ou HTML.
+
+A engrenagem preserva o fundo e os botões e apenas recolhe os painéis. O botão final **Ocultar janela inteira** esconde também o chat. **Ctrl+Shift+F9** recupera a aba Chat, suas configurações e os cliques; a bandeja do Windows oferece a mesma recuperação. Ctrl+Shift+F10 mantém o modo opcional de passagem de cliques e transparência.
 
 ### Backup TXT
 

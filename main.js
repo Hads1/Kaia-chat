@@ -6,6 +6,7 @@ const {
   globalShortcut,
   Tray,
   Menu,
+  clipboard,
 } = require('electron');
 const fs = require('fs');
 const path = require('path');
@@ -17,6 +18,10 @@ const { normalizeBlockedUsers, isBlocked } = require('./blocking');
 const { normalizeTiming } = require('./timing');
 const { normalizeCustom } = require('./custom');
 const { Transcript } = require('./transcript');
+const { WidgetServer, normalizeWidget } = require('./widget-server');
+const widgetServer = new WidgetServer();
+let widgetWindow,
+  collapsed = false;
 const { execFileSync } = require('child_process');
 let availableFonts = [
   'Segoe UI',
@@ -71,6 +76,7 @@ if (smoke) {
 settings.appearance = normalizeAppearance();
 settings.blockedUsers = normalizeBlockedUsers();
 settings.timing = normalizeTiming();
+settings.widget = normalizeWidget();
 const config = () => path.join(app.getPath('userData'), 'settings.json');
 const assets = path.join(__dirname, 'assets');
 const transcript = new Transcript((state) => {
@@ -109,6 +115,8 @@ async function chooseTranscript() {
 function decorated() {
   return {
     ...settings,
+    widget: normalizeWidget(settings.widget),
+    widgetUrl: widgetServer.url,
     appearance: normalizeAppearance(settings.appearance),
     blockedUsers: normalizeBlockedUsers(settings.blockedUsers),
     timing: normalizeTiming(settings.timing),
@@ -134,6 +142,7 @@ function emit(type, data) {
   )
     return;
   if (win && !win.isDestroyed()) win.webContents.send(type, data);
+  widgetServer.event(type, data);
   if (type === 'status')
     fs.appendFile(
       path.join(app.getPath('userData'), 'connections.log'),
@@ -155,6 +164,19 @@ app.whenReady().then(async () => {
       };
     } catch {}
   }
+  settings.widget = normalizeWidget(settings.widget);
+  settings.timing = normalizeTiming(settings.timing);
+  settings.appearance = normalizeAppearance(settings.appearance);
+  await widgetServer.start(smoke ? 0 : 19347, settings.widgetToken);
+  settings.widgetToken = widgetServer.token;
+  fs.writeFileSync(config(), JSON.stringify(settings, null, 2));
+  widgetServer.update(settings);
+  const syncWidget = () => {
+    widgetServer.update(settings);
+    widgetServer.prune(
+      (m) => !isBlocked(settings.blockedUsers, m.platform, m.login || m.user),
+    );
+  };
   win = new BrowserWindow({
     width: 510,
     height: 860,
@@ -169,13 +191,43 @@ app.whenReady().then(async () => {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      backgroundThrottling: false,
     },
   });
   win.setAlwaysOnTop(true, 'screen-saver');
+  win.on('closed', () => app.quit());
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', (e) => e.preventDefault());
   chats = new Chats(emit);
   ipcMain.handle('load', () => decorated());
+  ipcMain.handle('save-widget', (_, value) => {
+    settings.widget = normalizeWidget(value);
+    fs.writeFileSync(config(), JSON.stringify(settings, null, 2));
+    syncWidget();
+    return decorated();
+  });
+  ipcMain.handle('copy-widget', () => clipboard.writeText(widgetServer.url));
+  ipcMain.handle('popup-widget', async () => {
+    if (widgetWindow && !widgetWindow.isDestroyed()) {
+      widgetWindow.show();
+      return;
+    }
+    widgetWindow = new BrowserWindow({
+      width: 500,
+      height: 650,
+      title: 'Kaia Chat — Widget',
+      backgroundColor: '#181b24',
+      webPreferences: {
+        contextIsolation: true,
+        sandbox: true,
+        nodeIntegration: false,
+        backgroundThrottling: false,
+      },
+    });
+    widgetWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    widgetWindow.webContents.on('will-navigate', (e) => e.preventDefault());
+    await widgetWindow.loadURL(widgetServer.url);
+  });
   ipcMain.handle('choose-transcript', async () => {
     const file = await chooseTranscript();
     if (!file) return null;
@@ -184,11 +236,13 @@ app.whenReady().then(async () => {
   });
   ipcMain.handle('save-timing', (_, value) => {
     settings.timing = normalizeTiming(value);
+    syncWidget();
     fs.writeFileSync(config(), JSON.stringify(settings, null, 2));
     return decorated();
   });
   ipcMain.handle('save-blocked', (_, lists) => {
     settings.blockedUsers = normalizeBlockedUsers(lists);
+    syncWidget();
     fs.writeFileSync(config(), JSON.stringify(settings, null, 2));
     return decorated();
   });
@@ -196,6 +250,7 @@ app.whenReady().then(async () => {
     settings.appearance = normalizeAppearance(s.appearance);
     settings.fontSize = Math.min(36, Math.max(12, Number(s.fontSize) || 18));
     settings.background = Math.min(1, Math.max(0, Number(s.background) || 0));
+    syncWidget();
     fs.writeFileSync(config(), JSON.stringify(settings, null, 2));
     return decorated();
   });
@@ -233,6 +288,7 @@ app.whenReady().then(async () => {
     settings.appearance = normalizeAppearance(s.appearance);
     settings.blockedUsers = blockedUsers;
     settings.timing = normalizeTiming(s.timing ?? settings.timing);
+    syncWidget();
     fs.writeFileSync(config(), JSON.stringify(settings, null, 2));
     chats.start(settings);
     return decorated();
@@ -254,10 +310,25 @@ app.whenReady().then(async () => {
       emit('settings', { overlay: true });
     }
   };
+  const restore = () => {
+    locked = false;
+    overlay = false;
+    collapsed = false;
+    win.setIgnoreMouseEvents(false);
+    emit('settings', { overlay: false, collapsed: false, restore: true });
+    win.show();
+    win.focus();
+  };
   ipcMain.on('window', (_, a) => {
     if (a === 'close') win.close();
     if (a === 'minimize') win.minimize();
     if (a === 'lock') lock();
+    if (a === 'hide') win.hide();
+    if (a === 'restore') restore();
+    if (a === 'settings') {
+      collapsed = !collapsed;
+      emit('settings', { collapsed });
+    }
     if (a === 'overlay') {
       overlay = !overlay;
       locked = overlay;
@@ -267,26 +338,14 @@ app.whenReady().then(async () => {
     if (a === 'clear') emit('settings', { clear: true });
   });
   globalShortcut.register('CommandOrControl+Shift+F10', lock);
-  globalShortcut.register('CommandOrControl+Shift+F9', () => {
-    locked = false;
-    win.setIgnoreMouseEvents(false);
-    overlay = false;
-    emit('settings', { overlay: false });
-    win.show();
-    win.focus();
-  });
+  globalShortcut.register('CommandOrControl+Shift+F9', restore);
   tray = new Tray(path.join(assets, 'icon.png'));
   tray.setToolTip('Kaia Chat — Ctrl+Shift+F9 para configurar');
   tray.setContextMenu(
     Menu.buildFromTemplate([
       {
         label: 'Abrir configurações / liberar cliques',
-        click: () => {
-          locked = false;
-          win.setIgnoreMouseEvents(false);
-          emit('settings', { overlay: false });
-          win.show();
-        },
+        click: restore,
       },
       { label: 'Sair', click: () => app.quit() },
     ]),
@@ -348,6 +407,7 @@ app.on('before-quit', (event) => {
   });
 });
 app.on('will-quit', () => {
+  widgetServer.close();
   chats?.stop();
   globalShortcut.unregisterAll();
 });

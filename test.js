@@ -1,6 +1,68 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { channel, irc, publications } = require('./protocol');
+const { WidgetServer, normalizeWidget } = require('./widget-server');
+test('widget local protege rotas, omite configurações privadas e sincroniza histórico', async () => {
+  const server = new WidgetServer();
+  try {
+    const url = await server.start(0);
+    server.update({
+      widget: { layout: 'cards', css: '.user { color: pink; }' },
+      timing: { enabled: true, seconds: 1, fadeSeconds: 0 },
+      transcriptPath: 'SEGREDO',
+      blockedUsers: { all: ['segredo'] },
+    });
+    assert.equal((await fetch(url)).status, 200);
+    assert.equal((await fetch(new URL('/widget.html', url))).status, 404);
+    assert.equal(
+      (await fetch(url.replace('widget.html', 'main.js'))).status,
+      404,
+    );
+    assert.equal(JSON.stringify(server.config).includes('SEGREDO'), false);
+    server.event('message', {
+      platform: 'kick',
+      id: '1',
+      user: 'a',
+      text: 'oi',
+    });
+    server.event('message', {
+      platform: 'kick',
+      id: '1',
+      user: 'a',
+      text: 'duplicada',
+    });
+    assert.equal(server.snapshot().length, 1);
+    const response = await fetch(url.replace('widget.html', 'events'));
+    const reader = response.body.getReader();
+    const packet = new TextDecoder().decode((await reader.read()).value);
+    assert.match(packet, /snapshot/);
+    assert.match(packet, /oi/);
+    assert.doesNotMatch(packet, /SEGREDO/);
+    await reader.cancel();
+    server.messages[0].widgetTime -= 2000;
+    assert.equal(server.snapshot().length, 0);
+    server.event('message', {
+      platform: 'twitch',
+      id: '2',
+      user: 'b',
+      text: 'teste',
+    });
+    server.prune((m) => m.user !== 'b');
+    assert.equal(
+      server.messages.some((m) => m.user === 'b'),
+      false,
+    );
+    server.event('settings', { clear: true });
+    assert.equal(server.messages.length, 0);
+    assert.deepEqual(normalizeWidget({ layout: 'invalido', fontSize: 900 }), {
+      layout: 'classic',
+      fontSize: 72,
+      css: '',
+    });
+  } finally {
+    server.close();
+  }
+});
 test('normaliza canais e rejeita entradas impróprias', () => {
   assert.equal(channel('https://kick.com/Hads1?x=2'), 'hads1');
   assert.equal(channel('@Example_2'), 'example_2');
