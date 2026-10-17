@@ -20,6 +20,7 @@ const { normalizeCustom } = require('./custom');
 const { Transcript } = require('./transcript');
 const { WidgetServer, normalizeWidget } = require('./widget-server');
 const widgetServer = new WidgetServer();
+let displayMode;
 let widgetWindow,
   collapsed = false;
 const { execFileSync } = require('child_process');
@@ -117,6 +118,8 @@ function decorated() {
     ...settings,
     widget: normalizeWidget(settings.widget),
     widgetUrl: widgetServer.url,
+
+    displayState: displayMode?.state(),
     appearance: normalizeAppearance(settings.appearance),
     blockedUsers: normalizeBlockedUsers(settings.blockedUsers),
     timing: normalizeTiming(settings.timing),
@@ -135,6 +138,13 @@ function decorated() {
   };
 }
 function emit(type, data) {
+  if (type === 'settings' && 'overlay' in data && win && !win.isDestroyed()) {
+    win.setTitleBarOverlay(
+      data.overlay
+        ? { color: '#00000000', symbolColor: '#00000000', height: 1 }
+        : { color: '#0d1019', symbolColor: '#eeeeee', height: 47 },
+    );
+  }
   if (type === 'message') transcript.append(data);
   if (
     type === 'message' &&
@@ -183,7 +193,10 @@ app.whenReady().then(async () => {
     minWidth: 340,
     minHeight: 300,
     transparent: true,
-    frame: false,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { color: '#0d1019', symbolColor: '#eeeeee', height: 47 },
+    resizable: true,
+    maximizable: true,
     alwaysOnTop: true,
     backgroundColor: '#00000000',
     webPreferences: {
@@ -195,6 +208,39 @@ app.whenReady().then(async () => {
     },
   });
   win.setAlwaysOnTop(true, 'screen-saver');
+  win.setMaximizable(true);
+  displayMode = {
+    get active() {
+      return win.isMaximized();
+    },
+    enter: () => win.maximize(),
+    exit: () => {
+      if (win.isMaximized()) win.unmaximize();
+    },
+    state: () => ({ active: win.isMaximized(), snapped: win.isSnapped() }),
+  };
+  for (const event of ['maximize', 'unmaximize', 'resize'])
+    win.on(event, () => emit('display-state', displayMode.state()));
+  ipcMain.handle('display', (_, action) => {
+    if (action === 'enter' || (action === 'toggle' && !displayMode.active))
+      displayMode.enter();
+    else if (action === 'exit' || action === 'toggle') displayMode.exit();
+    emit('display-state', displayMode.state());
+    return decorated();
+  });
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown' || input.isAutoRepeat) return;
+    if (input.key === 'F11') {
+      event.preventDefault();
+      if (displayMode.active) displayMode.exit();
+      else displayMode.enter();
+      emit('display-state', displayMode.state());
+    } else if (input.key === 'Escape' && displayMode.active) {
+      event.preventDefault();
+      displayMode.exit();
+      emit('display-state', displayMode.state());
+    }
+  });
   win.on('closed', () => app.quit());
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', (e) => e.preventDefault());
@@ -311,6 +357,8 @@ app.whenReady().then(async () => {
     }
   };
   const restore = () => {
+    displayMode.exit();
+    emit('display-state', displayMode.state());
     locked = false;
     overlay = false;
     collapsed = false;

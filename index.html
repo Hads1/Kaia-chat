@@ -10,10 +10,16 @@
     <title>Kaia Chat</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
+  <body class="native-controls">
     <header>
       <span class="brand">✦ KAIA <b>CHAT</b></span
       ><span class="read">SOMENTE LEITURA</span
+      ><button
+        id="fullscreen"
+        title="Maximizar ou restaurar (F11). Esc para restaurar."
+        aria-label="Maximizar janela"
+      >
+        ⛶</button
       ><button id="minimize" title="Minimizar">−</button
       ><button id="close" title="Fechar">×</button>
     </header>
@@ -327,5 +333,6 @@
     <script src="typography.js"></script>
     <script src="renderer.js"></script>
     <script src="widget-ui.js"></script>
+    <script src="display-ui.js"></script>
   </body>
 </html>

@@ -1,5 +1,8 @@
 # Kaia Chat
 
+JANELA MAXIMIZADA E ENCAIXE — VERSÃO 0.8.0
+Use o botão padrão de maximizar/restaurar no canto superior direito. F11 também alterna; Esc restaura quando maximizada. Arraste o cabeçalho para posicionar e as bordas para redimensionar. No Windows 11, use os layouts de encaixe do próprio sistema (mouse sobre Maximizar, Win+Z ou arraste para o topo, conforme as opções do Windows). Campos e botões acompanham o tamanho, com rolagem nos painéis. Ctrl+Shift+F9 restaura a janela e os controles. Sem configuração de monitores.
+
 Abra KaiaChat.exe na pasta extraída do ZIP (ou ABRIR.cmd na pasta de desenvolvimento). Configure Twitch, Kick e Starvios separadamente com nome ou URL. Ative os canais desejados, selecione áudio e volume para cada um e clique em Salvar e conectar. Arquivo permite escolher WAV, MP3, OGG ou M4A. Testar toca somente o áudio local.
 
 Engrenagem esconde somente as configurações, preservando a janela normal e seus botões. O último botão oculta a janela inteira. Ctrl+Shift+F9 sempre recupera a janela, as configurações e os cliques. Arraste pelo cabeçalho e redimensione pelas bordas. Ctrl+Shift+F10 alterna passagem de cliques no modo transparente opcional. O ícone na bandeja também permite recuperar a janela.

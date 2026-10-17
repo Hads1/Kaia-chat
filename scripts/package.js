@@ -26,6 +26,7 @@ const appDir = path.join(stage, 'resources/app');
 fs.mkdirSync(path.join(appDir, 'node_modules'), { recursive: true });
 const source = [
   'main.js',
+  'display-ui.js',
   'widget-server.js',
   'widget.html',
   'widget.js',

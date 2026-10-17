@@ -297,6 +297,59 @@ module.exports = async (win, app, emit, config, transcript) => {
     const customSaved = await win.webContents.executeJavaScript(
       `(async()=>{const data=await window.kaia.load();for(const p of ['twitch','kick','starvios','custom'])data[p].enabled=false;Object.assign(data.custom,{name:'Minha plataforma',channel:'canal',url:'https://example.com/chat/{channel}',itemsPath:'data.messages',userPath:'sender.nick',textPath:'body',idPath:'id'});const saved=await window.kaia.save(data);apply(saved);return document.getElementById('custom-name').value==='Minha plataforma'&&document.getElementById('custom-itemsPath').value==='data.messages'&&!!document.getElementById('transcript-path').value;})()`,
     );
+    const windowTests = {};
+    const originalBounds = win.getBounds();
+    await win.webContents.executeJavaScript(
+      `document.getElementById('fullscreen').click()`,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    windowTests.maximized =
+      win.isMaximized() &&
+      (await win.webContents.executeJavaScript(
+        `document.body.classList.contains('fullscreen')`,
+      ));
+    fs.writeFileSync(
+      path.join(__dirname, 'preview-maximized.png'),
+      (await win.webContents.capturePage()).toPNG(),
+    );
+    win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    windowTests.restored =
+      !win.isMaximized() && win.getBounds().width === originalBounds.width;
+    windowTests.sizes = [];
+    for (const size of [
+      [340, 500],
+      [510, 860],
+      [960, 650],
+    ]) {
+      win.setSize(...size);
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      const layout = await win.webContents.executeJavaScript(`(()=>{
+        document.getElementById('tab-chat').click();
+        const toolbar=document.querySelector('.toolbar').getBoundingClientRect();
+        const buttons=[...document.querySelectorAll('.toolbar button')].map(b=>b.getBoundingClientRect());
+        const chatOK=document.body.scrollWidth<=innerWidth&&buttons.every(b=>b.left>=0&&b.right<=innerWidth&&b.bottom<=innerHeight)&&toolbar.bottom<=innerHeight;
+        document.getElementById('tab-widget').click();
+        const panel=document.getElementById('widget-panel');
+        const widgetOK=panel.scrollWidth<=panel.clientWidth;
+        document.getElementById('tab-chat').click();
+        return {width:innerWidth,height:innerHeight,chatOK,widgetOK};
+      })()`);
+      windowTests.sizes.push(layout);
+    }
+    win.setBounds(originalBounds);
+    win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'F11' });
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    windowTests.f11 = win.isMaximized();
+    await win.webContents.executeJavaScript(`window.kaia.window('restore')`);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    windowTests.recovery = !win.isMaximized();
+    const windowPassed =
+      windowTests.maximized &&
+      windowTests.restored &&
+      windowTests.f11 &&
+      windowTests.recovery &&
+      windowTests.sizes.every((s) => s.chatOK && s.widgetOK);
     await transcript.flush();
     const backup = fs.readFileSync(
       JSON.parse(fs.readFileSync(config(), 'utf8')).transcriptPath,
@@ -313,6 +366,7 @@ module.exports = async (win, app, emit, config, transcript) => {
         timingPassed &&
         backupPassed &&
         widgetPassed &&
+        windowPassed &&
         customSaved,
       initial,
       changed,
@@ -332,6 +386,7 @@ module.exports = async (win, app, emit, config, transcript) => {
       backup: { passed: backupPassed, messages: transcript.count },
       customSaved,
       controls,
+      windowTests,
     };
     fs.writeFileSync(
       path.join(__dirname, 'smoke-result.json'),

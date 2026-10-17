@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('kaia', {
   load: () => ipcRenderer.invoke('load'),
+  display: (action) => ipcRenderer.invoke('display', action),
   saveWidget: (s) => ipcRenderer.invoke('save-widget', s),
   copyWidget: () => ipcRenderer.invoke('copy-widget'),
   popupWidget: () => ipcRenderer.invoke('popup-widget'),
@@ -15,6 +16,7 @@ contextBridge.exposeInMainWorld('kaia', {
     if (
       [
         'message',
+        'display-state',
         'status',
         'emotes',
         'settings',

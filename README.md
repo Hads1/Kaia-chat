@@ -13,6 +13,7 @@ O aplicativo não envia mensagens. A leitura pública depende da disponibilidade
 ## Recursos
 
 - Twitch, Kick e Starvios com ativação, canal, áudio e volume próprios.
+- Botões nativos de minimizar, maximizar/restaurar e fechar, redimensionamento pelas bordas e encaixe de janelas do Windows; interface adaptável ao tamanho disponível.
 - Sons incluídos e seleção de arquivos WAV, MP3, OGG ou M4A.
 - Fontes instaladas, tamanho, peso, cor, sombra e prévia ao vivo.
 - Emotes nativos e conjuntos públicos disponíveis de 7TV, BetterTTV, FrankerFaceZ e Starvios.
@@ -23,6 +24,12 @@ O aplicativo não envia mensagens. A leitura pública depende da disponibilidade
 - **Tempo das mensagens (chat fade time)**: duração individual e fade configuráveis, com padrão de 2 minutos mais 2 segundos de fade.
 - **Backup TXT**: transcrição automática em UTF-8 no arquivo escolhido, preservada mesmo depois do fade.
 - **Plataforma personalizada**: endpoint JSON público, campos configuráveis, canal, nome e áudio próprios.
+
+### Maximizar e ajustar a janela — versão 0.8.0
+
+Use o botão **Maximizar/restaurar** no canto superior direito ou **F11** para ocupar a área disponível da tela. **Esc** restaura o tamanho anterior quando maximizada. Arraste pelo cabeçalho para posicionar e pelas bordas para redimensionar. No Windows 11, os controles nativos permitem usar os layouts de encaixe do sistema ao passar o mouse sobre Maximizar, usar **Win+Z** ou arrastar a janela para as áreas de encaixe (dependendo das opções de Multitarefas do Windows). **Win+setas** também permite encaixar a janela.
+
+O chat, campos, abas e botões acompanham a largura e a altura. Painéis têm rolagem e passam a uma coluna em janelas estreitas. A engrenagem continua recolhendo somente as configurações. Não existe seleção de monitor ou novo painel: mova a janela para a tela desejada e maximize. **Ctrl+Shift+F9** também sai da maximização e recupera os controles. A transparência opcional e o widget continuam disponíveis.
 
 ### Widget para OBS — versão 0.7.0
 
