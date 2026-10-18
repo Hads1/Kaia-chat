@@ -1,0 +1,7 @@
+audio:
+  saida_sr: ''
+spotify:
+  monitoring_enabled: false
+  client_id: ''
+  client_secret: ''
+  refresh_token: ''

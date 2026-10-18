@@ -1,0 +1,21 @@
+{
+  "kick": {
+    "enabled": true,
+    "channel": "hads1"
+  },
+  "twitch": {
+    "enabled": true,
+    "channel": "hads1"
+  },
+  "starvios": {
+    "enabled": false,
+    "channel": "hads"
+  },
+  "saida": "",
+  "voice": "pt-BR-FranciscaNeural",
+  "rate": "+0%",
+  "volume": "+0%",
+  "intervalo_segundos": 5,
+  "ignorar_comandos": true,
+  "ignorados": []
+}

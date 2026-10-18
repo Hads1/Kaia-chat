@@ -1,6 +1,17 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('kaia', {
   load: () => ipcRenderer.invoke('load'),
+  diagnoseMedia: () => ipcRenderer.invoke('media-diagnose'),
+  saveReader: (value) => ipcRenderer.invoke('save-reader', value),
+  readerAction: (action) => ipcRenderer.invoke('reader-action', action),
+  saveSR: (value) => ipcRenderer.invoke('save-sr', value),
+  srAction: (action, args) => ipcRenderer.invoke('sr-action', action, args),
+  spotifyAction: (action, value) =>
+    ipcRenderer.invoke('spotify-action', action, value),
+  youtubeAction: (action) => ipcRenderer.invoke('youtube-action', action),
+  srLoopback: (value) => ipcRenderer.invoke('sr-loopback', value),
+  mediaLink: (name) => ipcRenderer.invoke('media-link', name),
+  srOpen: (kind) => ipcRenderer.invoke('sr-open', kind),
   display: (action) => ipcRenderer.invoke('display', action),
   saveWidget: (s) => ipcRenderer.invoke('save-widget', s),
   copyWidget: () => ipcRenderer.invoke('copy-widget'),
@@ -16,6 +27,9 @@ contextBridge.exposeInMainWorld('kaia', {
     if (
       [
         'message',
+        'media-status',
+        'spotify-state',
+        'sr-state',
         'display-state',
         'status',
         'emotes',

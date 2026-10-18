@@ -1,0 +1,8 @@
+PyYAML
+requests
+websocket-client
+curl_cffi
+yt-dlp[default]
+numpy
+sounddevice
+soundcard

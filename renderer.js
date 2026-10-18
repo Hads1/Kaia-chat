@@ -262,6 +262,7 @@ window.kaia.on('settings', (s) => {
   if ('overlay' in s) {
     document.body.classList.toggle('overlay', s.overlay);
     if (s.overlay) {
+      window.selectKaiaTab?.('chat');
       const feed = document.getElementById('feed');
       feed.scrollTop = feed.scrollHeight;
     }

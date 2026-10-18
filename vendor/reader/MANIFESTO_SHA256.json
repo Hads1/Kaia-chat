@@ -1,0 +1,94 @@
+{
+  "arquivos": [
+    {
+      "path": "ABRIR.bat",
+      "bytes": 191,
+      "sha256": "d31bebdfe993e03ef908ee0a5d7e3eff17b6d68885b439463199bf6725b287ca"
+    },
+    {
+      "path": "audio_out.py",
+      "bytes": 18948,
+      "sha256": "b09da4bbc9b355ec1be79571c1b7d24e64ac1a1652ab43eeb7197de1f8112021"
+    },
+    {
+      "path": "chat_saude.py",
+      "bytes": 1393,
+      "sha256": "fdc6c4a061fdb23a17f447feb44e929a266345f8d7ab52411a4d119551ec7952"
+    },
+    {
+      "path": "config_leitor.json",
+      "bytes": 372,
+      "sha256": "d22ca1dffbe21e6430640e693018a40f4b1a03c491d80b35092433d05fdb79c4"
+    },
+    {
+      "path": "INSTALAR.bat",
+      "bytes": 329,
+      "sha256": "0ef793bd560fa85634da4ea506e918621d441c1ea5afed30483403120661eae5"
+    },
+    {
+      "path": "kick_chat.py",
+      "bytes": 11094,
+      "sha256": "1229692d315991b03c365dcbf584dda49a908c0fada419f005a3f3391de78594"
+    },
+    {
+      "path": "LEIA_ME.md",
+      "bytes": 4676,
+      "sha256": "cb12d696518a3981c2202e2c15e44368a8222400e3a942f50cdda0cd806524e2"
+    },
+    {
+      "path": "leitor_chat_app.py",
+      "bytes": 8022,
+      "sha256": "bc926b1e40b312069f3cc901c53d28c8c7c5f91749083823780e1f4d25a9c7db"
+    },
+    {
+      "path": "progresso_voz.py",
+      "bytes": 1106,
+      "sha256": "a17fbb9409e73320c505bd86652efbee6b10be82f5ac9049660bdcebe84e3f35"
+    },
+    {
+      "path": "requirements.txt",
+      "bytes": 76,
+      "sha256": "250cf73b4c1660906e1f01c7361151211928ad5e443776546330919604a11405"
+    },
+    {
+      "path": "starvios_chat.py",
+      "bytes": 5918,
+      "sha256": "1c902fb653cc08ad6b87896268a1663bbe63243c2870e4596db54ffb2a75b889"
+    },
+    {
+      "path": "tests/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/test_leitor.py",
+      "bytes": 1530,
+      "sha256": "1e29078a6ee67f1c3ae2fd6976ef33f50fc29127c8626b3e4576253179dd5db9"
+    },
+    {
+      "path": "twitch_chat.py",
+      "bytes": 6384,
+      "sha256": "eb4370ff5a0445c55d8fe8d1a4ed1180582340b5b440e642b60c935e3ef3a2a5"
+    },
+    {
+      "path": "VALIDACAO.json",
+      "bytes": 438,
+      "sha256": "16fe83f2a7f1cf018173de46737a6841a1335f665b63656a63ab4ad71c679c72"
+    },
+    {
+      "path": "VERIFICAR.bat",
+      "bytes": 79,
+      "sha256": "c53c94acc5ecf54193a8c36c522ed662f321a4146882de7b3c5084b999213ba8"
+    },
+    {
+      "path": "verificar_pacote.py",
+      "bytes": 499,
+      "sha256": "2127c0acd57a57f41c0d56d5148bf649d293f8d9262612e2ce99b658537de587"
+    },
+    {
+      "path": "VERSOES_VERIFICADAS.json",
+      "bytes": 380,
+      "sha256": "90c2e3215f6e41584bc9b18c021294277a5479e492cc59468e29426e7f6dfa9c"
+    }
+  ]
+}

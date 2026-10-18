@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="pt-BR">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Editor do HUD SR · Kaia</title
+  ><style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #0c1220;
+      color: #e5edf9;
+      font:
+        15px Segoe UI,
+        sans-serif;
+    }
+    main {
+      max-width: 1200px;
+      margin: auto;
+      padding: 28px;
+    }
+    h1 {
+      margin: 0 0 8px;
+    }
+    p {
+      color: #9db0cb;
+      line-height: 1.6;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+    }
+    .panel {
+      padding: 22px;
+      background: #141e30;
+      border: 1px solid #263954;
+      border-radius: 18px;
+    }
+    label {
+      display: block;
+      margin: 13px 0 5px;
+    }
+    input,
+    select,
+    textarea,
+    button {
+      font: inherit;
+      color: inherit;
+      background: #0c1526;
+      border: 1px solid #36506e;
+      border-radius: 8px;
+      padding: 9px;
+    }
+    input:not([type='checkbox']):not([type='color']),
+    select,
+    textarea {
+      width: 100%;
+    }
+    input[type='color'] {
+      width: 100%;
+      height: 40px;
+    }
+    textarea {
+      font:
+        13px Consolas,
+        monospace;
+      min-height: 180px;
+    }
+    button {
+      cursor: pointer;
+      margin: 5px 6px 5px 0;
+    }
+    button.primary {
+      background: #166ab5;
+      border-color: #36a6fa;
+    }
+    iframe {
+      width: 100%;
+      height: 320px;
+      border: 0;
+      background: repeating-conic-gradient(#253147 0% 25%, #1e293b 0% 50%)
+        50%/24px 24px;
+      border-radius: 12px;
+    }
+    .hint {
+      font-size: 13px;
+    }
+    .toolbar {
+      position: sticky;
+      bottom: 0;
+      background: #141e30;
+      padding: 10px 0;
+    }
+    #status {
+      color: #7de2ce;
+      min-height: 24px;
+    }
+    code {
+      overflow-wrap: anywhere;
+      color: #74d7ff;
+    }
+    @media (max-width: 800px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      main {
+        padding: 16px;
+      }
+    }
+  </style>
+  <main>
+    <h1>Seu HUD, do seu jeito</h1>
+    <p>
+      O segundo overlay mostra os mesmos dados do SR/Spotify. Edite a aparência
+      aqui; o HUD padrão continua disponível.
+    </p>
+    <div class="grid">
+      <section class="panel">
+        <label>Modelo</label
+        ><select id="theme">
+          <option value="neon">Neon · faixa luminosa</option>
+          <option value="minimal">Minimal · discreto</option>
+          <option value="glass">Glass · vidro</option>
+          <option value="retro">Retro · arcade</option>
+          <option value="broadcast">Broadcast · transmissão</option></select
+        ><label for="rgbMode">Iluminação RGB</label
+        ><select id="rgbMode">
+          <option value="off">Desligada</option>
+          <option value="rainbow">RGB animado · ciclo de cores</option>
+          <option value="track">Cor de acordo com a música</option>
+          <option value="audio">RGB + reação ao áudio real do SR</option>
+        </select>
+        <p class="hint">
+          Reação usa a energia e os picos do áudio do SR com saída explícita.
+          Sem sinal medido (Spotify/player padrão), mantém apenas o ciclo RGB;
+          não simula batidas.
+        </p>
+        <div id="fields"></div>
+        <label
+          ><input type="checkbox" id="showWho" /> Mostrar
+          solicitante/artista</label
+        ><label><input type="checkbox" id="showTime" /> Mostrar tempo</label
+        ><label
+          ><input type="checkbox" id="showBar" /> Mostrar barra de
+          progresso</label
+        ><label
+          ><input type="checkbox" id="showSpectrum" /> Mostrar soundbar de
+          frequências reais</label
+        ><label>CSS livre</label
+        ><textarea
+          id="customCSS"
+          spellcheck="false"
+          placeholder="#box { border-radius: 0; }&#10;#tit { text-transform: uppercase; }"
+        ></textarea>
+        <p class="hint">
+          Seletores: #box, #lab, #tit, #who, .bar, #fill, #tempo. Não altera
+          áudio ou reprodução.
+        </p>
+        <div class="toolbar">
+          <button class="primary" id="save">Salvar no overlay</button
+          ><button id="reset">Restaurar modelo</button
+          ><button id="export">Exportar</button
+          ><button id="import">Importar</button
+          ><input
+            type="file"
+            id="file"
+            accept="application/json,.json"
+            hidden
+          />
+        </div>
+        <div id="status" role="status"></div>
+      </section>
+      <section class="panel">
+        <h2>Prévia ao vivo</h2>
+        <iframe
+          id="preview"
+          src="sr-custom.html?preview=1"
+          title="Prévia do overlay"
+        ></iframe>
+        <p>
+          A prévia usa a música real. Somente Salvar aplica as alterações à
+          fonte do OBS.
+        </p>
+        <h3>URL do segundo overlay</h3>
+        <code id="url"></code>
+        <p>
+          <button id="copy">Copiar URL para OBS</button
+          ><button id="open">Abrir overlay</button>
+        </p>
+        <p class="hint">
+          OBS → adicionar Fonte de navegador. Use inicialmente 800 × 320 e
+          recorte conforme o layout. Fundo transparente; não precisa chroma key.
+        </p>
+        <h3>HUD padrão</h3>
+        <a href="sr.html" style="color: #8bdafa" target="_blank"
+          >Abrir HUD original</a
+        >
+      </section>
+    </div>
+  </main>
+  <script src="sr-editor.js"></script>
+</html>

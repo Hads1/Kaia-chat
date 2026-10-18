@@ -1,5 +1,7 @@
 # Kaia Chat
 
+**Versão 0.9.5:** abas Leitor e SR/Spotify, áudio independente, limpeza de áudios temporários e modo jogo transparente com passagem de cliques. Veja [Leitor e SR](docs/LEITOR-E-SR.md) e o [tutorial Spotify](docs/SPOTIFY.md).
+
 Overlay de leitura para **Twitch, Kick, Starvios e uma plataforma personalizada por API JSON**, feito para Windows. Configure cada canal e seu áudio independentemente e reúna as mensagens em um painel transparente sobre o jogo.
 
 ## Usar
@@ -18,7 +20,7 @@ O aplicativo não envia mensagens. A leitura pública depende da disponibilidade
 - Fontes instaladas, tamanho, peso, cor, sombra e prévia ao vivo.
 - Emotes nativos e conjuntos públicos disponíveis de 7TV, BetterTTV, FrankerFaceZ e Starvios.
 - Aba **Widget**: URL local para OBS, pop-up, layouts Clássico/Cartões/Compacto e CSS personalizado.
-- Engrenagem recolhe somente as configurações; o último botão oculta a janela inteira. Ctrl+Shift+F9 restaura a janela e os controles.
+- Engrenagem recolhe somente as configurações; o último botão ativa o chat transparente com passagem de cliques para o jogo. Ctrl+Shift+F9 restaura a janela e os controles.
 - Reconexão automática, controle de duplicatas e limite de 300 mensagens.
 - **Chats bloqueados**: listas globais ou por plataforma, sem exibir mensagens nem tocar áudio dos nicks bloqueados.
 - **Tempo das mensagens (chat fade time)**: duração individual e fade configuráveis, com padrão de 2 minutos mais 2 segundos de fade.
@@ -49,11 +51,11 @@ Na aba **Widget**, escolha layout e tamanho da fonte, edite o CSS e clique em **
 }
 ```
 
-Fonte, cor e sombra seguem a aparência do Chat; layout, tamanho e CSS pertencem ao Widget. O widget respeita bloqueios, exclusões, limpeza e temporizador, sem duplicar áudio. As mudanças salvas atualizam OBS e prévia. O Kaia Chat precisa continuar aberto; ocultar a janela mantém as conexões, o TXT e o widget ativos. Mensagens vencidas não reaparecem ao recarregar a fonte.
+Fonte, cor e sombra seguem a aparência do Chat; layout, tamanho e CSS pertencem ao Widget. O widget respeita bloqueios, exclusões, limpeza e temporizador, sem duplicar áudio. As mudanças salvas atualizam OBS e prévia. O Kaia Chat precisa continuar aberto; ativar o modo jogo mantém as conexões, o TXT e o widget ativos. Mensagens vencidas não reaparecem ao recarregar a fonte.
 
 A URL funciona no mesmo computador, sem hospedagem nem login, em servidor ligado somente a 127.0.0.1. O endereço contém um identificador aleatório persistente neste computador. A porta padrão é 19347; se estiver ocupada, o aplicativo escolhe outra e será preciso copiar a URL atualizada para o OBS. Configurações privadas e caminhos de arquivos não são servidos pelo widget. O CSS é de sua autoria; apenas CSS é aceito, sem editor de JavaScript ou HTML.
 
-A engrenagem preserva o fundo e os botões e apenas recolhe os painéis. O botão final **Ocultar janela inteira** esconde também o chat. **Ctrl+Shift+F9** recupera a aba Chat, suas configurações e os cliques; a bandeja do Windows oferece a mesma recuperação. Ctrl+Shift+F10 mantém o modo opcional de passagem de cliques e transparência.
+A engrenagem preserva o fundo e os botões e apenas recolhe os painéis. O botão final ativa o **Modo jogo**: somente as mensagens permanecem visíveis, sem fundo, controles ou captura de cliques e teclado. **Ctrl+Shift+F9** recupera a aba Chat, suas configurações e os cliques; a bandeja do Windows oferece a mesma recuperação. Ctrl+Shift+F10 mantém o modo opcional de passagem de cliques e transparência.
 
 ### Backup TXT
 

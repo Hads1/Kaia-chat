@@ -1,6 +1,308 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { channel, irc, publications } = require('./protocol');
+const { ReaderQueue, normalizeReader } = require('./reader');
+const { Spotify, REDIRECT } = require('./spotify');
+const { YouTubeSession } = require('./youtube-session');
+test('despachante encaminha !sr das quatro plataformas, sem históricos, bloqueados ou duplicatas', async () => {
+  const fs = require('node:fs'),
+    path = require('node:path'),
+    os = require('node:os');
+  const calls = [];
+  class Backend {
+    async start() {
+      this.process = {};
+    }
+    async call(action, args) {
+      calls.push({ action, args });
+      return true;
+    }
+    async close() {}
+  }
+  class SpotifyFake {
+    start() {}
+    info() {
+      return {};
+    }
+    close() {}
+  }
+  class SessionFake {
+    async cookies() {
+      return [];
+    }
+    close() {}
+  }
+  const fakeElectron = {
+    ipcMain: { handle() {} },
+    BrowserWindow: class {},
+    shell: {},
+    safeStorage: {},
+  };
+  const module = { exports: {} };
+  const dependencies = {
+    electron: fakeElectron,
+    './media-backend': { MediaBackend: Backend },
+    './spotify': { Spotify: SpotifyFake },
+    './youtube-session': { YouTubeSession: SessionFake },
+    './sr-assets': { createSRRoutes: () => () => {} },
+  };
+  new Function(
+    'require',
+    'module',
+    'exports',
+    fs.readFileSync(path.join(__dirname, 'media.js'), 'utf8'),
+  )((name) => dependencies[name] || require(name), module, module.exports);
+  const settings = {
+    reader: { enabled: false },
+    sr: { enabled: true },
+    blockedUsers: { all: ['bloqueado'] },
+  };
+  const manager = module.exports.installMedia({
+    win: {},
+    directory: fs.mkdtempSync(path.join(os.tmpdir(), 'kaia-router-')),
+    getSettings: () => settings,
+    saveSettings() {},
+    emit() {},
+    widgetServer: { url: 'http://127.0.0.1:1/token/widget.html' },
+    smoke: false,
+  });
+  try {
+    for (const platform of ['twitch', 'kick', 'starvios', 'custom'])
+      manager.receive('message', {
+        platform,
+        id: platform,
+        user: 'Pessoa' + platform,
+        text: '!sr Minha música',
+      });
+    manager.receive('message', {
+      platform: 'twitch',
+      id: 'twitch',
+      user: 'Pessoa',
+      text: '!sr Duplicada',
+    });
+    manager.receive('message', {
+      platform: 'kick',
+      id: 'old',
+      user: 'Antigo',
+      text: '!sr Histórico',
+      historical: true,
+    });
+    manager.receive('message', {
+      platform: 'kick',
+      id: 'blocked',
+      user: 'BLOQUEADO',
+      text: '!sr Bloqueada',
+    });
+    manager.receive('message', {
+      platform: 'twitch',
+      id: 'normal',
+      user: 'Pessoa',
+      text: 'boa live',
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+    const requests = calls.filter((c) => c.action === 'pedir');
+    assert.equal(requests.length, 4);
+    assert.ok(requests.every((c) => c.args[1] === 'Minha música'));
+  } finally {
+    await manager.close();
+  }
+});
+test('sessão dedicada sincroniza apenas cookies YouTube/Google e não lança navegador durante o teste', async () => {
+  const fs = require('node:fs'),
+    os = require('node:os'),
+    path = require('node:path');
+  const { WebSocketServer } = require('ws');
+  const server = new WebSocketServer({ port: 0, host: '127.0.0.1' });
+  await new Promise((resolve) => server.once('listening', resolve));
+  server.on('connection', (socket) =>
+    socket.on('message', (data) => {
+      const packet = JSON.parse(data);
+      socket.send(
+        JSON.stringify({
+          id: packet.id,
+          result:
+            packet.method === 'Storage.getCookies'
+              ? {
+                  cookies: [
+                    {
+                      domain: '.youtube.com',
+                      name: 'fixture',
+                      value: 'teste',
+                      expires: 1234,
+                    },
+                    {
+                      domain: '.google.com',
+                      name: 'fixture2',
+                      value: 'teste',
+                      expires: 5678,
+                    },
+                    {
+                      domain: '.example.com',
+                      name: 'fora',
+                      value: 'nao-importar',
+                    },
+                  ],
+                }
+              : {},
+        }),
+      );
+    }),
+  );
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'kaia-youtube-test-'));
+  const session = new YouTubeSession(root);
+  fs.mkdirSync(session.profile);
+  fs.writeFileSync(
+    path.join(session.profile, 'DevToolsActivePort'),
+    server.address().port + '\n/devtools/browser/fixture\n',
+  );
+  try {
+    const [a, b] = await Promise.all([session.cookies(), session.cookies()]);
+    assert.equal(a.length, 2);
+    assert.equal(b.length, 2);
+    assert.equal(a[0].expirationDate, 1234);
+    assert.ok(a.every((c) => c.domain !== '.example.com'));
+  } finally {
+    session.close();
+    for (const client of server.clients) client.terminate();
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+test('leitor respeita amostragem, prioridade, bloqueio e histórico sem sobrepor falas', async () => {
+  const spoken = [],
+    waiters = [];
+  let blocked = new Set();
+  const reader = new ReaderQueue({
+    speak: (m) => {
+      spoken.push(m.user);
+      return new Promise((resolve) => waiters.push(resolve));
+    },
+    blocked: (m) => blocked.has(m.user),
+  });
+  reader.configure({
+    enabled: true,
+    output: 'Headset',
+    interval: 0,
+    every: 2,
+    lowEvery: 3,
+    high: ['vip'],
+    low: ['baixo'],
+  });
+  const send = (user, text = 'mensagem', historical = false) =>
+    reader.receive({ user, text, historical });
+  send('normal');
+  assert.equal(spoken.length, 0);
+  send('normal');
+  assert.deepEqual(spoken, ['normal']);
+  send('baixo');
+  send('baixo');
+  send('baixo');
+  send('vip');
+  send('ignorado', '!sr música');
+  send('antigo', 'histórico', true);
+  blocked.add('bloqueado');
+  send('bloqueado');
+  waiters.shift()();
+  await new Promise((r) => setImmediate(r));
+  assert.deepEqual(spoken, ['normal', 'vip']);
+  blocked.add('baixo');
+  reader.prune();
+  waiters.shift()();
+  await new Promise((r) => setImmediate(r));
+  assert.equal(spoken.length, 2);
+  assert.equal(reader.queue.length, 0);
+  reader.clear();
+  assert.equal(normalizeReader({ high: '@Vip, vip\nOutro' }).high.length, 2);
+});
+test('Spotify protege tokens, renova automaticamente e usa PKCE com state validado', async () => {
+  const fs = require('node:fs'),
+    os = require('node:os'),
+    path = require('node:path');
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'kaia-spotify-test-'));
+  const requests = [];
+  let opened;
+  const storage = {
+    isEncryptionAvailable: () => true,
+    encryptString: (s) => Buffer.from(s).map((x) => x ^ 93),
+    decryptString: (b) =>
+      Buffer.from(b)
+        .map((x) => x ^ 93)
+        .toString(),
+  };
+  const spotify = new Spotify({
+    directory: folder,
+    storage,
+    open: async (url) => {
+      opened = url;
+    },
+    fetcher: async (url, options) => {
+      requests.push({ url, options });
+      if (url.includes('/api/token'))
+        return {
+          ok: true,
+          json: async () => ({
+            access_token: 'fixture-token',
+            refresh_token: 'fixture-refresh',
+            expires_in: 3600,
+          }),
+        };
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          is_playing: true,
+          item: {
+            name: 'Faixa de teste',
+            artists: [{ name: 'Artista' }],
+            duration_ms: 120000,
+          },
+          progress_ms: 1000,
+        }),
+      };
+    },
+  });
+  try {
+    spotify.configure({ clientId: 'a'.repeat(32) });
+    await spotify.connect();
+    const url = new URL(opened);
+    assert.equal(url.searchParams.get('code_challenge_method'), 'S256');
+    assert.equal(url.searchParams.get('redirect_uri'), REDIRECT);
+    assert.equal(
+      (await fetch(REDIRECT + '?state=errado&code=teste')).status,
+      400,
+    );
+    const callback = new URL(REDIRECT);
+    callback.search = new URLSearchParams({
+      state: url.searchParams.get('state'),
+      code: 'fixture-code',
+    });
+    assert.equal((await fetch(callback)).status, 200);
+    await new Promise((r) => setImmediate(r));
+    spotify.auth.expires = 0;
+    await spotify.poll();
+    assert.equal(spotify.current.titulo, 'Faixa de teste');
+    assert.ok(
+      requests.some(
+        (r) => r.options.body?.get('grant_type') === 'refresh_token',
+      ),
+    );
+    assert.equal(
+      JSON.stringify(spotify.info()).includes('fixture-token'),
+      false,
+    );
+    assert.equal(
+      fs
+        .readFileSync(path.join(folder, 'spotify.enc'), 'utf8')
+        .includes('fixture-refresh'),
+      false,
+    );
+    const publicState = JSON.parse(
+      fs.readFileSync(path.join(folder, 'avatar/spotify.json')),
+    );
+    assert.equal(publicState.access_token, undefined);
+  } finally {
+    spotify.close();
+  }
+});
 const { WidgetServer, normalizeWidget } = require('./widget-server');
 test('widget local protege rotas, omite configurações privadas e sincroniza histórico', async () => {
   const server = new WidgetServer();
@@ -336,4 +638,26 @@ test('aparência antiga recebe padrões e valores fora dos limites são normaliz
   assert.equal(s.shadowOpacity, 100);
   assert.equal(s.shadowBlur, 0);
   assert.equal(s.shadowX, -12);
+});
+
+test('limpeza remove somente áudio temporário privado e preserva histórico e arquivos externos', async () => {
+  const fs = require('node:fs/promises'),
+    path = require('node:path'),
+    os = require('node:os');
+  const { cleanupMedia } = require('./media-cleanup');
+  const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'kaia-cleanup-'));
+  await fs.mkdir(path.join(folder, 'tmp_sr'));
+  await fs.mkdir(path.join(folder, 'tmp_leitura'));
+  await fs.writeFile(path.join(folder, 'tmp_sr', 'reader-test.mp3'), 'audio');
+  await fs.writeFile(path.join(folder, 'tmp_leitura', 'test.wav'), 'audio');
+  await fs.writeFile(path.join(folder, 'tmp_sr', 'controle_estado.json'), '{}');
+  await fs.writeFile(path.join(folder, 'meu-alerta.mp3'), 'preservar');
+  assert.deepEqual(await cleanupMedia(folder), []);
+  await assert.rejects(
+    fs.access(path.join(folder, 'tmp_sr', 'reader-test.mp3')),
+  );
+  await assert.rejects(fs.access(path.join(folder, 'tmp_leitura', 'test.wav')));
+  await fs.access(path.join(folder, 'tmp_sr', 'controle_estado.json'));
+  await fs.access(path.join(folder, 'meu-alerta.mp3'));
+  assert.deepEqual(await cleanupMedia(folder), []);
 });

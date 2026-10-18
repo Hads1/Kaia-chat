@@ -20,6 +20,8 @@ const { normalizeCustom } = require('./custom');
 const { Transcript } = require('./transcript');
 const { WidgetServer, normalizeWidget } = require('./widget-server');
 const widgetServer = new WidgetServer();
+const { installMedia } = require('./media');
+let media;
 let displayMode;
 let widgetWindow,
   collapsed = false;
@@ -116,6 +118,7 @@ async function chooseTranscript() {
 function decorated() {
   return {
     ...settings,
+    ...media?.info(),
     widget: normalizeWidget(settings.widget),
     widgetUrl: widgetServer.url,
 
@@ -153,6 +156,7 @@ function emit(type, data) {
     return;
   if (win && !win.isDestroyed()) win.webContents.send(type, data);
   widgetServer.event(type, data);
+  media?.receive(type, data);
   if (type === 'status')
     fs.appendFile(
       path.join(app.getPath('userData'), 'connections.log'),
@@ -182,6 +186,7 @@ app.whenReady().then(async () => {
   fs.writeFileSync(config(), JSON.stringify(settings, null, 2));
   widgetServer.update(settings);
   const syncWidget = () => {
+    media?.prune();
     widgetServer.update(settings);
     widgetServer.prune(
       (m) => !isBlocked(settings.blockedUsers, m.platform, m.login || m.user),
@@ -208,6 +213,16 @@ app.whenReady().then(async () => {
     },
   });
   win.setAlwaysOnTop(true, 'screen-saver');
+  media = installMedia({
+    win,
+    directory: path.join(app.getPath('userData'), 'media'),
+    getSettings: () => settings,
+    saveSettings: () =>
+      fs.writeFileSync(config(), JSON.stringify(settings, null, 2)),
+    emit,
+    widgetServer,
+    smoke,
+  });
   win.setMaximizable(true);
   displayMode = {
     get active() {
@@ -351,9 +366,11 @@ app.whenReady().then(async () => {
   const lock = () => {
     locked = !locked;
     win.setIgnoreMouseEvents(locked, { forward: true });
+    win.setFocusable(!locked);
     if (locked) {
       overlay = true;
       emit('settings', { overlay: true });
+      win.blur();
     }
   };
   const restore = () => {
@@ -363,6 +380,7 @@ app.whenReady().then(async () => {
     overlay = false;
     collapsed = false;
     win.setIgnoreMouseEvents(false);
+    win.setFocusable(true);
     emit('settings', { overlay: false, collapsed: false, restore: true });
     win.show();
     win.focus();
@@ -371,7 +389,15 @@ app.whenReady().then(async () => {
     if (a === 'close') win.close();
     if (a === 'minimize') win.minimize();
     if (a === 'lock') lock();
-    if (a === 'hide') win.hide();
+    if (a === 'hide') {
+      overlay = true;
+      locked = true;
+      emit('settings', { overlay: true });
+      win.setIgnoreMouseEvents(true, { forward: true });
+      win.blur();
+      win.setFocusable(false);
+      if (!win.isVisible()) win.showInactive();
+    }
     if (a === 'restore') restore();
     if (a === 'settings') {
       collapsed = !collapsed;
@@ -381,6 +407,8 @@ app.whenReady().then(async () => {
       overlay = !overlay;
       locked = overlay;
       win.setIgnoreMouseEvents(locked, { forward: true });
+      win.setFocusable(!locked);
+      if (locked) win.blur();
       emit('settings', { overlay });
     }
     if (a === 'clear') emit('settings', { clear: true });
@@ -449,7 +477,7 @@ app.on('before-quit', (event) => {
   if (finishedQuit) return;
   event.preventDefault();
   chats?.stop();
-  transcript.flush().finally(() => {
+  Promise.allSettled([transcript.flush(), media?.close()]).finally(() => {
     finishedQuit = true;
     app.quit();
   });

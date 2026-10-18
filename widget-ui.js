@@ -1,10 +1,23 @@
+window.selectKaiaTab = (name) => {
+  document.body.classList.toggle('widget-tab', name === 'widget');
+  document.body.classList.toggle(
+    'feature-tab',
+    ['reader', 'sr'].includes(name),
+  );
+  for (const tab of ['chat', 'widget', 'reader', 'sr']) {
+    document
+      .getElementById('tab-' + tab)
+      ?.setAttribute('aria-pressed', String(tab === name));
+    if (tab !== 'chat') {
+      const panel = document.getElementById(tab + '-panel');
+      if (panel) panel.hidden = tab !== name;
+    }
+  }
+};
 (() => {
   const el = (id) => document.getElementById(id);
   function tab(widget) {
-    document.body.classList.toggle('widget-tab', widget);
-    el('widget-panel').hidden = !widget;
-    el('tab-widget').setAttribute('aria-pressed', String(widget));
-    el('tab-chat').setAttribute('aria-pressed', String(!widget));
+    window.selectKaiaTab(widget ? 'widget' : 'chat');
   }
   el('tab-chat').onclick = () => tab(false);
   el('tab-widget').onclick = () => tab(true);

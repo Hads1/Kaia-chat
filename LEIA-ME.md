@@ -1,11 +1,22 @@
 # Kaia Chat
 
+CORREÇÃO 0.9.5 — MODO JOGO
+O último botão deixa somente os textos do chat na tela, com fundo transparente e passagem de cliques para o jogo, sem esconder a janela. Ctrl+Shift+F9 restaura os controles. Posicione e redimensione antes de ativar. SR, leitor e conexões continuam ativos.
+
+
+CORREÇÃO 0.9.2 — PLAYER E LEITOR
+O Chat tem controles com ícones e barra de tempo arrastável; a aba SR também tem barra de posição. Falhas de áudio ficam visíveis na fila, sem simular reprodução. Se o YouTube pedir login, clique Conectar YouTube, entre no perfil dedicado do Chrome/Edge, teste o acesso e use Tentar pedido novamente. Não importe cache ou cookies manualmente. No leitor, escolha a saída antes de ativar; alterações são salvas automaticamente e Testar voz usa a saída atualmente selecionada. A versão continua em teste local, aguardando seu OK antes de publicar.
+
+VERSÃO 0.9.0 — TESTE LOCAL, AINDA NÃO PUBLICADA
+Novas abas Leitor e SR/Spotify. Configure a leitura a cada N mensagens, prioridades e saída de áudio. Bloqueados vêm da aba Chat. Ative o SR para aceitar !sr nos chats conectados. A sessão YouTube é própria e sincronizada automaticamente após login; não importa cookies de outro navegador. Spotify tem campos visíveis e tutorial dentro da aba; cada usuário informa os próprios dados. O fluxo PKCE dispensa segredo e renova tokens automaticamente. Veja docs/SPOTIFY.md e docs/LEITOR-E-SR.md.
+Este ZIP deve ser testado no Windows antes de enviar a integração ao GitHub. A publicação aguarda seu OK no chat.
+
 JANELA MAXIMIZADA E ENCAIXE — VERSÃO 0.8.0
 Use o botão padrão de maximizar/restaurar no canto superior direito. F11 também alterna; Esc restaura quando maximizada. Arraste o cabeçalho para posicionar e as bordas para redimensionar. No Windows 11, use os layouts de encaixe do próprio sistema (mouse sobre Maximizar, Win+Z ou arraste para o topo, conforme as opções do Windows). Campos e botões acompanham o tamanho, com rolagem nos painéis. Ctrl+Shift+F9 restaura a janela e os controles. Sem configuração de monitores.
 
 Abra KaiaChat.exe na pasta extraída do ZIP (ou ABRIR.cmd na pasta de desenvolvimento). Configure Twitch, Kick e Starvios separadamente com nome ou URL. Ative os canais desejados, selecione áudio e volume para cada um e clique em Salvar e conectar. Arquivo permite escolher WAV, MP3, OGG ou M4A. Testar toca somente o áudio local.
 
-Engrenagem esconde somente as configurações, preservando a janela normal e seus botões. O último botão oculta a janela inteira. Ctrl+Shift+F9 sempre recupera a janela, as configurações e os cliques. Arraste pelo cabeçalho e redimensione pelas bordas. Ctrl+Shift+F10 alterna passagem de cliques no modo transparente opcional. O ícone na bandeja também permite recuperar a janela.
+Engrenagem esconde somente as configurações, preservando a janela normal e seus botões. O último botão ativa o chat transparente com passagem de cliques para o jogo. Ctrl+Shift+F9 sempre recupera a janela, as configurações e os cliques. Arraste pelo cabeçalho e redimensione pelas bordas. Ctrl+Shift+F10 alterna passagem de cliques no modo transparente opcional. O ícone na bandeja também permite recuperar a janela.
 
 Somente leitura: não pede contas e não envia mensagens. Twitch usa leitura IRC anônima, sujeita à disponibilidade do serviço. Kick descobre o provedor atual, suporta Centrifugo e Pusher e renova a conexão antes do token temporário expirar. Tokens ficam somente na memória. Endpoints do site Kick podem mudar.
 
@@ -38,4 +49,7 @@ Pontos de canal e TTS por resgates ainda não estão implementados; o estudo est
 
 WIDGET PARA OBS — VERSÃO 0.7.0
 Abra a aba Widget, escolha Clássico, Cartões ou Compacto, ajuste o tamanho e edite o CSS. Salvar widget atualiza a prévia e a transmissão. Copiar URL fornece o endereço para uma Fonte de navegador do OBS, com fundo transparente (sugestão: 500 × 800). Abrir pop-up mostra outra janela do widget. Veja exemplos de CSS no README.
-O aplicativo precisa continuar aberto no mesmo computador do OBS. Ocultar a janela mantém widget, conexões e TXT funcionando. Bloqueios, exclusões, limpeza e tempo das mensagens são compartilhados, sem duplicar os áudios. A URL fica salva neste computador; se a porta estiver ocupada, copie a nova URL mostrada no aplicativo.
+O aplicativo precisa continuar aberto no mesmo computador do OBS. Ativar o modo jogo mantém widget, conexões e TXT funcionando. Bloqueios, exclusões, limpeza e tempo das mensagens são compartilhados, sem duplicar os áudios. A URL fica salva neste computador; se a porta estiver ocupada, copie a nova URL mostrada no aplicativo.
+
+TESTE 0.9.4 — SR E LIMPEZA DE ÁUDIO
+Corrige travamento no carregamento nativo do áudio. Na aba SR, selecione saída e volume e use Testar som do SR. O botão de mudo informa o estado real. Se o YouTube exigir login, Conectar YouTube > entrar na janela dedicada > Testar acesso. Os áudios temporários de fala são apagados após uso e no fechamento, com nova limpeza na inicialização do motor após interrupção. Músicas são transmitidas sem download permanente. Publicação aguarda teste e OK.

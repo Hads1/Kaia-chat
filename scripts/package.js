@@ -25,6 +25,18 @@ fs.renameSync(
 const appDir = path.join(stage, 'resources/app');
 fs.mkdirSync(path.join(appDir, 'node_modules'), { recursive: true });
 const source = [
+  'media-cleanup.js',
+  'reader.js',
+  'player-ui.js',
+  'youtube-session.js',
+  'media.js',
+  'media-backend.js',
+  'media-ui.js',
+  'spotify.js',
+  'sr-assets.js',
+  'backend',
+  'vendor',
+  '.runtime',
   'main.js',
   'display-ui.js',
   'widget-server.js',
@@ -68,6 +80,8 @@ const source = [
 for (const file of source)
   fs.cpSync(path.join(root, file), path.join(appDir, file), {
     recursive: true,
+    filter: (source) =>
+      !source.includes('__pycache__') && !source.endsWith('.pyc'),
   });
 for (const dep of Object.keys(pkg.dependencies))
   fs.cpSync(
@@ -83,7 +97,7 @@ fs.copyFileSync(
 );
 fs.writeFileSync(
   path.join(stage, 'COMECE-AQUI.txt'),
-  `KAIA CHAT ${pkg.version} — WINDOWS 10/11 x64\r\n\r\nExtraia o ZIP inteiro e abra KaiaChat.exe.\r\nConfigure Twitch, Kick e/ou Starvios com seus próprios canais.\r\nSelecione som/volume por plataforma e clique em Salvar e conectar.\r\nFontes, cores e sombras ficam em Fonte, cor e sombra. A aba Widget fornece URL para OBS, layouts e CSS.\r\nA engrenagem recolhe apenas as configurações. O último botão oculta a janela inteira.\r\nCtrl+Shift+F9 retorna às configurações e libera os cliques.\r\n\r\nSem login e somente leitura. Requer internet.\r\nCada computador salva suas próprias preferências.\r\nNão envie somente o EXE; compartilhe o ZIP completo.\r\nCódigo-fonte em resources/app. Licença GPLv3 e créditos incluídos.\r\n`,
+  `KAIA CHAT ${pkg.version} — WINDOWS 10/11 x64\r\n\r\nExtraia o ZIP inteiro e abra KaiaChat.exe.\r\nConfigure Twitch, Kick e/ou Starvios com seus próprios canais.\r\nSelecione som/volume por plataforma e clique em Salvar e conectar.\r\nFontes, cores e sombras ficam em Fonte, cor e sombra. A aba Widget fornece URL para OBS, layouts e CSS.\r\nA engrenagem recolhe apenas as configurações. O último botão ativa o chat transparente com passagem de cliques para o jogo.\r\nCtrl+Shift+F9 retorna às configurações e libera os cliques.\r\n\r\nSem login e somente leitura. Requer internet.\r\nCada computador salva suas próprias preferências.\r\nNão envie somente o EXE; compartilhe o ZIP completo.\r\nCódigo-fonte em resources/app. Licença GPLv3 e créditos incluídos.\r\n`,
 );
 execFileSync(
   'powershell.exe',

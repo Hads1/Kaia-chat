@@ -46,6 +46,15 @@ class WidgetServer {
   request(req, res) {
     const route = req.url?.split('?')[0];
     const prefix = `/${this.token}/`;
+    if (route?.startsWith(prefix + 'sr/') && this.srRoute) {
+      Promise.resolve(
+        this.srRoute(req, res, route.slice((prefix + 'sr/').length)),
+      ).catch(() => {
+        if (!res.headersSent) res.writeHead(500);
+        res.end();
+      });
+      return;
+    }
     if (req.method !== 'GET' || !route?.startsWith(prefix)) {
       res.writeHead(404);
       res.end();

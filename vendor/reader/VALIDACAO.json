@@ -1,0 +1,18 @@
+{
+  "pacote": "LEITOR_CHAT_SEM_IA",
+  "validacao": {
+    "testes_python": 4,
+    "testes_js": 0,
+    "importacao_isolada": true,
+    "dependencias_presentes_no_ambiente": true,
+    "instalacao_em_outra_maquina_testada": false,
+    "reproducao_em_live_testada": false
+  },
+  "excluidos": [
+    "credenciais e cookies",
+    "ambientes virtuais",
+    "modelos de IA",
+    "historicos pessoais",
+    "caches e bytecode"
+  ]
+}

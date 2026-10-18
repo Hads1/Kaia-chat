@@ -1,0 +1,18 @@
+{
+  "pacote": "SR_HUD_COMPLETO",
+  "validacao": {
+    "testes_python": 5,
+    "testes_js": 6,
+    "importacao_isolada": true,
+    "dependencias_presentes_no_ambiente": true,
+    "instalacao_em_outra_maquina_testada": false,
+    "reproducao_em_live_testada": false
+  },
+  "excluidos": [
+    "credenciais e cookies",
+    "ambientes virtuais",
+    "modelos de IA",
+    "historicos pessoais",
+    "caches e bytecode"
+  ]
+}

@@ -27,7 +27,361 @@
       <nav id="tabs" aria-label="Configurações">
         <button id="tab-chat" aria-pressed="true">Chat</button
         ><button id="tab-widget" aria-pressed="false">Widget</button>
+        <button id="tab-reader" aria-pressed="false">Leitor</button>
+        <button id="tab-sr" aria-pressed="false">SR / Spotify</button>
       </nav>
+      <section id="reader-panel" class="feature-panel" hidden>
+        <h1>Leitor de chat</h1>
+        <p>
+          Lê as novas mensagens dos canais conectados na aba Chat. Sem IA, sem
+          responder na live. Os bloqueios gerais também valem para a voz.
+        </p>
+        <label class="check-row"
+          ><input type="checkbox" id="reader-enabled" /> Ativar leitura</label
+        >
+        <div class="type-grid">
+          <label
+            >Ler uma mensagem a cada N mensagens<input
+              id="reader-every"
+              type="number"
+              min="1"
+              max="100"
+              value="1"
+          /></label>
+          <label
+            >Baixa prioridade: ler uma a cada N<input
+              id="reader-lowEvery"
+              type="number"
+              min="1"
+              max="100"
+              value="5"
+          /></label>
+          <label
+            >Intervalo entre leituras (segundos)<input
+              id="reader-interval"
+              type="number"
+              min="0"
+              max="300"
+              value="5"
+          /></label>
+          <label
+            >Volume (%)<input
+              id="reader-volume"
+              type="number"
+              min="1"
+              max="100"
+              value="80"
+          /></label>
+          <label class="wide"
+            >Saída da leitura<select id="reader-output">
+              <option value="">Escolha uma saída de áudio</option>
+            </select></label
+          >
+          <label
+            >Voz<select id="reader-voice">
+              <option value="pt-BR-FranciscaNeural">
+                Francisca · português BR
+              </option>
+              <option value="pt-BR-ThalitaMultilingualNeural">
+                Thalita · português BR
+              </option>
+              <option value="pt-BR-AntonioNeural">
+                Antonio · português BR
+              </option>
+            </select></label
+          >
+          <label
+            >Velocidade (%)<input
+              id="reader-rate"
+              type="number"
+              min="-50"
+              max="100"
+              value="0"
+          /></label>
+        </div>
+        <label class="check-row"
+          ><input id="reader-sayName" type="checkbox" checked /> Falar o nome do
+          usuário</label
+        >
+        <label class="check-row"
+          ><input id="reader-ignoreCommands" type="checkbox" checked /> Ignorar
+          comandos iniciados com !</label
+        >
+        <div class="blocked-grid">
+          <label
+            >Alta prioridade<textarea
+              id="reader-high"
+              rows="4"
+              placeholder="Um nick por linha"
+            ></textarea>
+          </label>
+          <label
+            >Baixa prioridade<textarea
+              id="reader-low"
+              rows="4"
+              placeholder="Um nick por linha"
+            ></textarea>
+          </label>
+        </div>
+        <p>
+          Alta prioridade lê todas as mensagens e passa à frente da fila, após
+          terminar a fala atual. Prioridade normal e baixa têm contagens
+          separadas. A fila comporta 100 mensagens. Histórico recuperado ao
+          conectar não é falado.
+        </p>
+        <div class="feature-actions">
+          <button id="save-reader" class="primary">Salvar leitura</button
+          ><button id="reader-test">Testar voz</button
+          ><button id="reader-clear">Limpar fila</button
+          ><button id="reader-stop">Parar leitura</button
+          ><button id="refresh-devices">Atualizar saídas de áudio</button>
+        </div>
+        <p id="reader-status" role="status">
+          Selecione a saída e salve antes de ativar.
+        </p>
+        <p id="media-device-status" role="status"></p>
+        <p>
+          Para ouvir só no headset, escolha uma saída que não esteja capturada
+          no OBS. A leitura não troca para a saída padrão se o dispositivo
+          escolhido ficar indisponível. Voz Edge requer internet.
+        </p>
+      </section>
+      <section id="sr-panel" class="feature-panel" hidden>
+        <h1>Song Request / Spotify</h1>
+        <p>
+          Pedidos !sr nome da música ou !sr link do YouTube, recebidos nos chats
+          conectados, entram na fila. Ative abaixo para aceitar pedidos.
+          Usuários bloqueados e mensagens históricas são ignorados.
+        </p>
+        <label class="check-row"
+          ><input id="sr-enabled" type="checkbox" /> Aceitar pedidos !sr das
+          lives</label
+        >
+        <div class="type-grid">
+          <label
+            >Volume (%)<input
+              id="sr-volume"
+              type="number"
+              min="0"
+              max="100"
+              value="80" /></label
+          ><label
+            >Repetir<select id="sr-repeat">
+              <option value="off">Desligado</option>
+              <option value="one">Faixa atual</option>
+              <option value="playlist">Playlist</option>
+            </select></label
+          ><label class="wide"
+            >Saída da música<select id="sr-output">
+              <option value="">Saída padrão do Windows</option>
+            </select></label
+          >
+        </div>
+        <label class="check-row"
+          ><input id="sr-shuffle" type="checkbox" /> Playlist aleatória</label
+        >
+        <button id="save-sr" class="primary">Salvar SR</button>
+        <h2 id="sr-now">Nenhuma música em reprodução</h2>
+        <p id="sr-progress"></p>
+        <div class="music-timeline">
+          <input
+            id="sr-timeline"
+            type="range"
+            min="0"
+            max="1"
+            value="0"
+            step="0.1"
+            disabled
+            aria-label="Posição da música"
+          /><output id="sr-time">0:00 / --:--</output>
+        </div>
+        <div class="feature-actions">
+          <button data-sr="prev">Anterior</button
+          ><button data-sr="play_pause">Reproduzir / Pausar</button
+          ><button data-sr="skip">Próxima</button
+          ><button data-sr="stop">Parar</button
+          ><button id="sr-mute" data-sr="mute_toggle" aria-pressed="false">
+            Silenciar SR</button
+          ><button data-sr="limpar">Limpar fila</button
+          ><button data-sr="retry">Tentar pedido novamente</button>
+          <button id="sr-test-audio">Testar som do SR</button>
+        </div>
+        <p id="sr-audio-status" role="status"></p>
+        <p>
+          Privacidade dos áudios: músicas do SR são transmitidas sem download
+          permanente. As falas usam arquivos temporários, apagados após o uso e
+          ao fechar. Restos de uma interrupção são limpos na próxima
+          inicialização do motor de áudio. Sons escolhidos por você e o backup
+          TXT são preservados.
+        </p>
+        <label
+          >Ir para o segundo<input
+            id="sr-seek"
+            type="number"
+            min="0"
+            value="0" /></label
+        ><button id="sr-seek-go">Avançar posição</button>
+        <label
+          >Música ou link<input
+            id="sr-query"
+            type="text"
+            placeholder="Nome da música ou URL do YouTube" /></label
+        ><button id="sr-request">Adicionar música</button>
+        <label
+          >Playlist do YouTube<input
+            id="sr-playlist"
+            type="text"
+            placeholder="https://www.youtube.com/playlist?list=..." /></label
+        ><button id="sr-playlist-add">Adicionar playlist</button>
+        <p id="sr-status" role="status"></p>
+        <details open>
+          <summary>Fila de pedidos</summary>
+          <ol id="sr-queue"></ol>
+        </details>
+        <details>
+          <summary>Histórico e estatísticas</summary>
+          <p id="sr-stats"></p>
+          <ol id="sr-history"></ol>
+          <button data-sr="limpar_historico">Limpar histórico do SR</button>
+        </details>
+        <details class="type-panel" open>
+          <summary>
+            Sessão do YouTube<span
+              >Login e cookies automáticos, sem importar arquivo</span
+            >
+          </summary>
+          <div class="type-content">
+            <p>
+              Abra a sessão dedicada do SR no Chrome/Edge e faça login no
+              YouTube se necessário. A sessão é reutilizada e sincronizada
+              automaticamente. Não é preciso procurar cookies ou cache em
+              pastas. Restrições do YouTube podem exigir nova autenticação ou
+              impedir algumas faixas.
+            </p>
+            <div class="feature-actions">
+              <button id="youtube-connect">Conectar YouTube</button
+              ><button id="youtube-test">Testar acesso sem tocar</button
+              ><button id="youtube-disconnect">Desconectar YouTube</button>
+            </div>
+            <p id="youtube-status" role="status"></p>
+          </div>
+        </details>
+        <details class="type-panel" open>
+          <summary>
+            Spotify: minhas credenciais<span
+              >Configure sua própria aplicação</span
+            >
+          </summary>
+          <div class="type-content">
+            <label
+              >Client ID<input
+                id="spotify-client-id"
+                type="text"
+                autocomplete="off" /></label
+            ><label
+              >Client Secret (opcional; PKCE funciona sem ele)<input
+                id="spotify-client-secret"
+                type="password"
+                autocomplete="new-password"
+                placeholder="Deixe vazio para manter o segredo salvo" /></label
+            ><label class="check-row"
+              ><input id="spotify-clear-secret" type="checkbox" /> Remover
+              segredo salvo e usar somente PKCE</label
+            ><label
+              >Redirect URI — copie exatamente<input
+                id="spotify-redirect"
+                type="text"
+                readonly
+            /></label>
+            <div class="feature-actions">
+              <button id="spotify-save">Salvar minhas credenciais</button
+              ><button id="spotify-connect">Conectar Spotify</button
+              ><button id="spotify-disconnect">Desconectar Spotify</button>
+            </div>
+            <p id="spotify-status" role="status"></p>
+            <p id="spotify-now"></p>
+            <p>
+              O Spotify publica a faixa nos HUDs; a reprodução continua no
+              aplicativo Spotify. A autorização e os tokens são renovados
+              automaticamente. O SR reproduz pedidos do YouTube, não baixa áudio
+              do Spotify.
+            </p>
+            <h3>Como obter e inserir os dados</h3>
+            <ol>
+              <li>
+                Abra o Spotify Developer Dashboard e entre com sua conta.
+                Aplicações em Development Mode exigem Premium do proprietário e
+                usuários autorizados no painel.
+              </li>
+              <li>
+                Crie uma aplicação, escolha Web API e cadastre o Redirect URI
+                mostrado acima. Use 127.0.0.1, não localhost.
+              </li>
+              <li>
+                Nas configurações da aplicação, copie o Client ID para o campo
+                desta aba. O fluxo PKCE de aplicativo desktop dispensa Client
+                Secret; o campo opcional permite guardar o seu, se utilizado.
+              </li>
+              <li>
+                Clique Salvar minhas credenciais, depois Conectar Spotify.
+                Autorize no navegador oficial e volte ao Kaia Chat.
+              </li>
+              <li>
+                Toque uma música no Spotify. A faixa aparecerá aqui e nos HUDs.
+                Não envie suas chaves ou tokens ao GitHub.
+              </li>
+            </ol>
+            <div class="feature-actions">
+              <button data-media-link="dashboard">Abrir painel Spotify</button
+              ><button data-media-link="spotifyDocs">Guia oficial</button
+              ><button data-media-link="spotifyVideo">
+                Vídeo: obter Client ID</button
+              ><button data-media-link="redirectVideo">
+                Vídeo: Redirect URI
+              </button>
+            </div>
+            <p>
+              Vídeos complementares em inglês podem mostrar uma interface
+              antiga. Para a URL e o fluxo atuais, siga este tutorial e o guia
+              oficial.
+            </p>
+          </div>
+        </details>
+        <details class="type-panel">
+          <summary>HUDs, editor e soundbar</summary>
+          <div class="type-content">
+            <label>HUD padrão<input id="sr-url" readonly /></label
+            ><label
+              >HUD personalizado<input id="sr-custom-url" readonly
+            /></label>
+            <div class="feature-actions">
+              <button data-sr-open="standard">Abrir HUD padrão</button
+              ><button data-sr-open="custom">Abrir HUD personalizado</button
+              ><button data-sr-open="editor">
+                Editor completo de HUD / CSS
+              </button>
+            </div>
+            <iframe
+              id="sr-preview"
+              title="Prévia do HUD SR"
+              sandbox="allow-scripts allow-same-origin"
+            ></iframe
+            ><label class="check-row"
+              ><input id="sr-loopback-enabled" type="checkbox" /> Medir áudio da
+              saída para soundbar</label
+            ><label
+              >Saída da soundbar<select id="sr-loopback-output">
+                <option value="">Saída padrão</option>
+              </select></label
+            ><button id="sr-loopback-save">Aplicar soundbar</button>
+            <p>
+              O medidor usa o áudio da saída selecionada. Outros sons no mesmo
+              dispositivo também podem aparecer. O editor preserva temas, CSS,
+              RGB e barras do pacote original.
+            </p>
+          </div>
+        </details>
+      </section>
       <section id="widget-panel" hidden>
         <h1>Widget para sua live</h1>
         <p>
@@ -309,11 +663,54 @@
         ><button id="clear" title="Limpar mensagens">⌫</button
         ><button
           id="hide"
-          title="Ocultar janela inteira. Ctrl+Shift+F9 para restaurar."
+          title="Modo jogo: somente chat transparente, com cliques passando para o jogo. Ctrl+Shift+F9 para configurar."
+          aria-label="Ativar chat transparente para jogar"
         >
           ◉
         </button>
       </div>
+      <section id="chat-player" aria-label="Player de música do SR">
+        <div class="mini-player-head">
+          <strong id="chat-sr-title">SR · nenhuma música</strong>
+          <div class="mini-player-buttons">
+            <button
+              id="chat-sr-prev"
+              title="Música anterior"
+              aria-label="Música anterior"
+            ></button
+            ><button
+              id="chat-sr-play"
+              title="Reproduzir ou pausar"
+              aria-label="Reproduzir música"
+            ></button
+            ><button
+              id="chat-sr-next"
+              title="Próxima música"
+              aria-label="Próxima música"
+            ></button
+            ><button
+              id="chat-sr-repeat"
+              title="Repetir"
+              aria-label="Repetir música"
+              aria-pressed="false"
+            ></button>
+          </div>
+        </div>
+        <div class="music-timeline">
+          <input
+            id="chat-sr-timeline"
+            type="range"
+            min="0"
+            max="1"
+            value="0"
+            step="0.1"
+            disabled
+            aria-label="Posição da música na aba Chat"
+          /><output id="chat-sr-time">0:00 / --:--</output>
+        </div>
+        <p id="chat-sr-status" role="status">Aguardando pedido !sr</p>
+        <p id="chat-reader-status" role="status">Leitor desativado</p>
+      </section>
       <section id="feed" aria-live="polite">
         <div id="empty">
           <span>✦</span>
@@ -334,5 +731,7 @@
     <script src="renderer.js"></script>
     <script src="widget-ui.js"></script>
     <script src="display-ui.js"></script>
+    <script src="media-ui.js"></script>
+    <script src="player-ui.js"></script>
   </body>
 </html>

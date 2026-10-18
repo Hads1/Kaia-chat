@@ -225,13 +225,21 @@ module.exports = async (win, app, emit, config, transcript) => {
       const saved=await window.kaia.load();
       return {collapsed,widget:saved.widget.layout==='cards'&&saved.widget.css.includes('19px'),url:saved.widgetUrl};
     })()`);
-    await win.webContents.executeJavaScript(`window.kaia.window('hide')`);
+    await win.webContents.executeJavaScript(
+      `document.getElementById('hide').click()`,
+    );
     await new Promise((resolve) => setTimeout(resolve, 100));
-    controls.hidden = !win.isVisible();
+    controls.hidden =
+      win.isVisible() &&
+      !win.isFocusable() &&
+      (await win.webContents.executeJavaScript(
+        `document.body.classList.contains('overlay')&&!document.body.classList.contains('widget-tab')&&!document.body.classList.contains('feature-tab')&&getComputedStyle(document.getElementById('feed')).display!=='none'&&getComputedStyle(document.body).backgroundColor==='rgba(0, 0, 0, 0)'&&getComputedStyle(document.querySelector('.toolbar')).display==='none'`,
+      ));
     await win.webContents.executeJavaScript(`window.kaia.window('restore')`);
     await new Promise((resolve) => setTimeout(resolve, 100));
     controls.restored =
       win.isVisible() &&
+      win.isFocusable() &&
       (await win.webContents.executeJavaScript(
         `!document.body.classList.contains('settings-collapsed')&&!document.body.classList.contains('widget-tab')`,
       ));
@@ -350,6 +358,108 @@ module.exports = async (win, app, emit, config, transcript) => {
       windowTests.f11 &&
       windowTests.recovery &&
       windowTests.sizes.every((s) => s.chatOK && s.widgetOK);
+    const mediaTests = await win.webContents.executeJavaScript(`(async()=>{
+      document.getElementById('tab-reader').click();
+      const data=await window.kaia.load();
+      const saved=await window.kaia.saveReader({...data.reader,enabled:false,every:3,lowEvery:5,high:'@Vip,VIP',low:'Pouco'});
+      const diagnose=await window.kaia.diagnoseMedia();
+      const readerVisible=!document.getElementById('reader-panel').hidden&&getComputedStyle(document.getElementById('feed')).display==='none';
+      document.getElementById('tab-sr').click();
+      const srVisible=!document.getElementById('sr-panel').hidden&&!!document.getElementById('spotify-client-id')&&document.getElementById('spotify-redirect').value.includes('127.0.0.1');
+      await window.kaia.srAction('set_volume',[42]);
+      document.getElementById('tab-chat').click();
+      return {saved:saved.every===3&&saved.high.length===1&&saved.high[0]==='vip',readerVisible,srVisible,outputs:diagnose.outputs.length,runtime:diagnose.ffmpeg&&diagnose.ffplay,srUrl:data.srUrl,editorUrl:data.srEditorUrl};
+    })()`);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const mediaFrame = new BrowserWindow({
+      show: false,
+      webPreferences: { sandbox: true, nodeIntegration: false },
+    });
+    await mediaFrame.loadURL(mediaTests.editorUrl);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    mediaTests.editor = await mediaFrame.webContents.executeJavaScript(
+      `!!document.getElementById('save')&&!!document.getElementById('preview')`,
+    );
+    fs.writeFileSync(
+      path.join(__dirname, 'preview-sr-editor.png'),
+      (await mediaFrame.webContents.capturePage()).toPNG(),
+    );
+    mediaFrame.destroy();
+    await win.webContents.executeJavaScript(
+      `document.getElementById('tab-reader').click()`,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    fs.writeFileSync(
+      path.join(__dirname, 'preview-reader.png'),
+      (await win.webContents.capturePage()).toPNG(),
+    );
+    await win.webContents.executeJavaScript(
+      `document.getElementById('tab-sr').click()`,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    fs.writeFileSync(
+      path.join(__dirname, 'preview-sr.png'),
+      (await win.webContents.capturePage()).toPNG(),
+    );
+    const playerTests = {};
+    await win.webContents.executeJavaScript(
+      `document.getElementById('tab-chat').click()`,
+    );
+    emit('sr-state', {
+      titulo: 'Música de teste',
+      elapsed: 30,
+      dur: 120,
+      tocando: true,
+      paused: false,
+      repeat: 'off',
+      estado: 'playing',
+      fila: [],
+    });
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    Object.assign(
+      playerTests,
+      await win.webContents.executeJavaScript(
+        `({timeline:document.getElementById('chat-sr-timeline').max==='120'&&Number(document.getElementById('chat-sr-timeline').value)>=30,pause:document.getElementById('chat-sr-play').getAttribute('aria-label')==='Pausar música',icons:document.querySelectorAll('.mini-player-buttons svg').length===4})`,
+      ),
+    );
+    fs.writeFileSync(
+      path.join(__dirname, 'preview-chat-player.png'),
+      (await win.webContents.capturePage()).toPNG(),
+    );
+    emit('sr-state', {
+      titulo: '',
+      elapsed: 0,
+      dur: 0,
+      tocando: false,
+      paused: false,
+      repeat: 'off',
+      estado: 'error',
+      erro: 'YouTube exige login para o áudio',
+      fila: [{ titulo: 'Pedido com erro', dur: 244, status: 'erro' }],
+    });
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    playerTests.error = await win.webContents.executeJavaScript(
+      `document.getElementById('chat-sr-timeline').disabled&&document.getElementById('chat-sr-status').textContent.includes('login')&&document.getElementById('chat-sr-title').textContent==='Pedido com erro'`,
+    );
+    playerTests.readerActivation = await win.webContents
+      .executeJavaScript(`(async()=>{
+      document.getElementById('tab-reader').click();
+      const box=document.getElementById('reader-enabled'),output=document.getElementById('reader-output');output.value='';box.checked=true;await box.onchange();const gated=!box.checked&&document.getElementById('reader-status').textContent.includes('escolha');
+      output.add(new Option('Saída de teste','fixture-output'));output.value='fixture-output';box.checked=true;await box.onchange();const enabled=(await window.kaia.load()).reader.enabled;box.checked=false;await box.onchange();return gated&&enabled&&!(await window.kaia.load()).reader.enabled;
+    })()`);
+    const playerPassed =
+      playerTests.timeline &&
+      playerTests.pause &&
+      playerTests.icons &&
+      playerTests.error &&
+      playerTests.readerActivation;
+    const mediaPassed =
+      mediaTests.saved &&
+      mediaTests.readerVisible &&
+      mediaTests.srVisible &&
+      mediaTests.outputs > 0 &&
+      mediaTests.runtime &&
+      mediaTests.editor;
     await transcript.flush();
     const backup = fs.readFileSync(
       JSON.parse(fs.readFileSync(config(), 'utf8')).transcriptPath,
@@ -367,6 +477,8 @@ module.exports = async (win, app, emit, config, transcript) => {
         backupPassed &&
         widgetPassed &&
         windowPassed &&
+        mediaPassed &&
+        playerPassed &&
         customSaved,
       initial,
       changed,
@@ -387,6 +499,8 @@ module.exports = async (win, app, emit, config, transcript) => {
       customSaved,
       controls,
       windowTests,
+      mediaTests,
+      playerTests,
     };
     fs.writeFileSync(
       path.join(__dirname, 'smoke-result.json'),

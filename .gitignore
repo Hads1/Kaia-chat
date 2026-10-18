@@ -15,3 +15,12 @@ VERIFICACAO.txt
 *.sha256.txt
 .DS_Store
 Thumbs.db
+
+.runtime/
+__pycache__/
+*.pyc
+*.secrets
+*.enc
+!backend/requirements.txt
+
+!vendor/**/requirements.txt

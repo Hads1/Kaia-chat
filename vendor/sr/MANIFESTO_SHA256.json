@@ -1,0 +1,264 @@
+{
+  "arquivos": [
+    {
+      "path": "ABRIR.bat",
+      "bytes": 187,
+      "sha256": "ce12a71d3915dfe65bf91c06ec18758bcc740d31ed18820baf2d52f4083209d3"
+    },
+    {
+      "path": "app_sr.py",
+      "bytes": 19290,
+      "sha256": "84e9e73a466d0e3d12fc440b4c87049dce681c2c04d740d4fa7902137d852a7f"
+    },
+    {
+      "path": "audio_out.py",
+      "bytes": 18386,
+      "sha256": "dc65726f83c1d47825e62cd0f792a66fa3ca83982163c5cc415a12dbc3b5d02f"
+    },
+    {
+      "path": "avatar/spotify.json",
+      "bytes": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "path": "avatar/spotify_status.json",
+      "bytes": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "path": "avatar/sr-custom.html",
+      "bytes": 1844,
+      "sha256": "8cadebb9286ae81f9bac27b3fe19357dcf37eb563e252ca8e5f0322749aabcd7"
+    },
+    {
+      "path": "avatar/sr-editor.html",
+      "bytes": 3956,
+      "sha256": "e14e7ca14b78f7a7ffd28a45ff8d3517f411d70f98b69f50528fb3c3ed53b2c9"
+    },
+    {
+      "path": "avatar/sr-editor.js",
+      "bytes": 4578,
+      "sha256": "76861d8088d837d72cf0e06beba005b6364aa0c9ceea01e2fa793a5c3fe1044f"
+    },
+    {
+      "path": "avatar/sr-layout.js",
+      "bytes": 1216,
+      "sha256": "89d7889d2351bf5cc1c34d286bd837bf48785f92fc0f6d2969d6a603a0b0d663"
+    },
+    {
+      "path": "avatar/sr-rgb.js",
+      "bytes": 1757,
+      "sha256": "1b55c1e4998b1939cd6753d875b516fabd521e5fdda05d69775e9cf61eff2e1c"
+    },
+    {
+      "path": "avatar/sr-spectrum.js",
+      "bytes": 2028,
+      "sha256": "01407628659bdc823c47044585ab5187978fac4e07d3db1418b980c47195eccc"
+    },
+    {
+      "path": "avatar/sr.html",
+      "bytes": 1506,
+      "sha256": "1694e74703fffe8aa0def153ba25773707e26222c4d729a9f7ab73c7f79ff36e"
+    },
+    {
+      "path": "avatar/sr.js",
+      "bytes": 3725,
+      "sha256": "4a6445a54ac1302a723e46788561d60d181f1ae2dcec9867a7f7214bd2ffbbfe"
+    },
+    {
+      "path": "avatar/sr.json",
+      "bytes": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "path": "avatar/sr_audio_visual.json",
+      "bytes": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "path": "avatar/sr_layout.json",
+      "bytes": 494,
+      "sha256": "8de039446d87ceb0dc885912e9a7ce9d7d21c3ae2779b6f86d2cbd01e5c5d722"
+    },
+    {
+      "path": "avatar/sr_visual_status.json",
+      "bytes": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "path": "chat_saude.py",
+      "bytes": 1393,
+      "sha256": "fdc6c4a061fdb23a17f447feb44e929a266345f8d7ab52411a4d119551ec7952"
+    },
+    {
+      "path": "CONECTAR_SPOTIFY.bat",
+      "bytes": 76,
+      "sha256": "b167c2bb6ae5946b0ce0a1be4d49d86d0fb4e8e2c8341893287354ac4e26663a"
+    },
+    {
+      "path": "config.yaml",
+      "bytes": 171,
+      "sha256": "ba797cd42bba645933933e90a2545706dd851a7ce3a61efd0d46995226001d48"
+    },
+    {
+      "path": "executar_sr.py",
+      "bytes": 1004,
+      "sha256": "e7085c4ce00a4794e177514e9d0e0ff3aaf5d742b14054b1926d70fb3ec6b745"
+    },
+    {
+      "path": "hud_server.py",
+      "bytes": 2161,
+      "sha256": "e8dd256c8e6124e566c28d8635748fa4681ff1c570bb95efe2506fad09255d5e"
+    },
+    {
+      "path": "INSTALAR.bat",
+      "bytes": 329,
+      "sha256": "0ef793bd560fa85634da4ea506e918621d441c1ea5afed30483403120661eae5"
+    },
+    {
+      "path": "kick_chat.py",
+      "bytes": 11094,
+      "sha256": "1229692d315991b03c365dcbf584dda49a908c0fada419f005a3f3391de78594"
+    },
+    {
+      "path": "LEIA_ME.md",
+      "bytes": 5329,
+      "sha256": "f3a9c24dd098b900bfd064c180979fe6519b1017d107c6f53eeac20c68ab5e4d"
+    },
+    {
+      "path": "overlay_server.py",
+      "bytes": 2170,
+      "sha256": "db0ee2fcf4dbe910cd0588c9e4bcbb19170b10226444b3fabd4b34bd7a290dce"
+    },
+    {
+      "path": "painel_sr_integrado.py",
+      "bytes": 5615,
+      "sha256": "e9f206e694cd6678350b16114f4dd4d125f30003b3050ae029a9f1b6a29c03d1"
+    },
+    {
+      "path": "painel_sr_loopback.py",
+      "bytes": 1415,
+      "sha256": "38aa4d31ec6f7a31bc6fe66309723ac8602f2eb1553c6e10bef22f9f27c5aa90"
+    },
+    {
+      "path": "progresso_voz.py",
+      "bytes": 1106,
+      "sha256": "a17fbb9409e73320c505bd86652efbee6b10be82f5ac9049660bdcebe84e3f35"
+    },
+    {
+      "path": "requirements.txt",
+      "bytes": 95,
+      "sha256": "3a31daac7de7217f10aa5a7335bb13a5a73e25a87edbb5e2685fcdf8d23420e8"
+    },
+    {
+      "path": "spotify_agora.py",
+      "bytes": 48164,
+      "sha256": "5c4a4924a601f87c2e1d727138147c7dac3c09e50aa40d8f6d6cdc2929d6a6b1"
+    },
+    {
+      "path": "spotify_ligar.py",
+      "bytes": 3733,
+      "sha256": "77cadef221fefae1741e07e653beaa4e7c78580f9e1ac9422c3c4b632cf43e30"
+    },
+    {
+      "path": "sr_audio_visual.py",
+      "bytes": 2089,
+      "sha256": "1286b13b53ff790eeecf35068ac24b3af54e87aa12215a67f17bf55847214f4a"
+    },
+    {
+      "path": "sr_consulta.py",
+      "bytes": 6343,
+      "sha256": "73f280fe0e2a3d2f993cac52668fa51d8f773d470c17840a5b73316514a4b1a8"
+    },
+    {
+      "path": "sr_controle.py",
+      "bytes": 3985,
+      "sha256": "11cd1ded9e21c547ba748b857f45b3ad3baaf3de90ea81389319b0a263819ec7"
+    },
+    {
+      "path": "sr_loopback.py",
+      "bytes": 2324,
+      "sha256": "ff4060b666d703e837d4294886e4dcea6f2f9255918b7c885d3406ed07c98d71"
+    },
+    {
+      "path": "sr_overlay_layout.py",
+      "bytes": 2108,
+      "sha256": "ad6a3cb3b40e00488427098e7ead722172c23655b7469cbd34a87f8e4fac3750"
+    },
+    {
+      "path": "sr_player.py",
+      "bytes": 58094,
+      "sha256": "8bc41fc75ab88ef39f5d70f89baa25460c08390fca2d82392b2c095fa982bfee"
+    },
+    {
+      "path": "sr_servico.py",
+      "bytes": 1237,
+      "sha256": "5abd7ac3411cd04b31dcbf4e049261eed8a5fa306247fd8f56c1e16e047a7c0f"
+    },
+    {
+      "path": "sr_ui_utils.py",
+      "bytes": 453,
+      "sha256": "fd48d9dc8f8c3f0c4dc97a65abaf19bfe476e8ec47f2a9604e5682387d6474c2"
+    },
+    {
+      "path": "sr_visual_config.json",
+      "bytes": 41,
+      "sha256": "5a516b1ac1b0b885ba5420ae8bd28d0e5f1bdbb18504c32bfdffe4780697f27f"
+    },
+    {
+      "path": "sr_youtube_config.json",
+      "bytes": 26,
+      "sha256": "34e659a6127de5ffca2c5888599408268e1aea6d7b00bab80222052fed2269da"
+    },
+    {
+      "path": "sr_youtube_sessao.py",
+      "bytes": 4900,
+      "sha256": "6ed8119e903169398148efd58a9bc1040151677c581c22f13de8753d8525c227"
+    },
+    {
+      "path": "tests/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tests/sr_spotify_hud.js",
+      "bytes": 800,
+      "sha256": "e1f374fb2e571ff1442baf1e1cfe8c9181a6b797d6f15ad6b3f733c13c26bb8b"
+    },
+    {
+      "path": "tests/test_sr_overlay_editor.py",
+      "bytes": 2199,
+      "sha256": "a630065ab66de50cf644fd317fb2fcdc5babb88d2efedeba91fab458f057c474"
+    },
+    {
+      "path": "tests/test_sr_rgb.py",
+      "bytes": 1053,
+      "sha256": "986e9af81e7df6d5b0ba8070f9b1aa15a813da0d5424013aa0235debc8f9a57b"
+    },
+    {
+      "path": "ui_theme.py",
+      "bytes": 6954,
+      "sha256": "eacba48b63d7961d6c0b63e8f564e74d30259c4358c054778a5aa4d6d0f7d8e6"
+    },
+    {
+      "path": "VALIDACAO.json",
+      "bytes": 435,
+      "sha256": "d7d7367fa56a4b3fddbc33b850c711ad4d8e69c1ab2c9d28fb171f6d0eff7b83"
+    },
+    {
+      "path": "VERIFICAR.bat",
+      "bytes": 79,
+      "sha256": "c53c94acc5ecf54193a8c36c522ed662f321a4146882de7b3c5084b999213ba8"
+    },
+    {
+      "path": "verificar_pacote.py",
+      "bytes": 499,
+      "sha256": "2127c0acd57a57f41c0d56d5148bf649d293f8d9262612e2ce99b658537de587"
+    },
+    {
+      "path": "VERSOES_VERIFICADAS.json",
+      "bytes": 380,
+      "sha256": "90c2e3215f6e41584bc9b18c021294277a5479e492cc59468e29426e7f6dfa9c"
+    }
+  ]
+}
