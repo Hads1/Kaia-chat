@@ -106,7 +106,7 @@ function installMedia({
   }
   let configuredProcess, srState;
   const poll = setInterval(async () => {
-    if (closing || pollBusy || !backend.process) return;
+    if (smoke || closing || pollBusy || !backend.process) return;
     pollBusy = true;
     try {
       srState = await backend.call('state', [], 5000);

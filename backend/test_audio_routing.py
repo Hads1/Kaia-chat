@@ -51,4 +51,49 @@ class AudioRouting(unittest.TestCase):
         with patch.object(audio_out,'spawn',return_value=proc):
             self.assertEqual(audio_out.tocar_bloqueado('fixture.wav',saida='Headset',papel='leitura'),'erro')
 
+    def interrupted_player(self,position=85,duration=161,code=0):
+        player=self.player();player._lock=threading.RLock();player._stop=False;player.paused=False
+        player.atual={'id':'fixture1234','titulo':'Faixa','dur':duration,'stream':'https://old.googlevideo.com/audio'}
+        player.proc=Mock();player.proc.played_seconds=position;player.proc.poll.return_value=code
+        player.acc=0;player.t0=0;player._spawn=Mock();player.erro=''
+        def kill():player.proc=None
+        player._kill.side_effect=kill
+        return player
+
+    def test_early_clean_exit_renews_stream_and_resumes_same_position(self):
+        player=self.interrupted_player();item=player.atual
+        def thread(target,**kw):return types.SimpleNamespace(start=target)
+        with patch.object(sr_player.threading,'Thread',side_effect=thread),patch.object(sr_player,'_url_stream',return_value='https://new.googlevideo.com/audio'):
+            self.assertTrue(player._recover_interruption())
+        self.assertIs(player.atual,item);player._spawn.assert_called_once_with('https://new.googlevideo.com/audio',ss=85)
+        self.assertEqual(player.acc,85);self.assertEqual(item['_recoveries'],1)
+
+    def test_natural_end_does_not_retry(self):
+        player=self.interrupted_player(position=160)
+        with patch.object(sr_player.threading,'Thread') as worker:
+            self.assertFalse(player._recover_interruption());worker.assert_not_called()
+
+    def test_repeated_failure_preserves_track_and_position(self):
+        player=self.interrupted_player();player.atual['_recoveries']=3
+        self.assertTrue(player._recover_interruption())
+        self.assertTrue(player.paused);self.assertEqual(player.acc,85);self.assertIsNotNone(player.atual)
+        player._spawn.assert_not_called()
+
+    def test_stop_while_resolving_prevents_unwanted_restart(self):
+        player=self.interrupted_player()
+        def stopped(_):player.atual=None;return 'https://new.googlevideo.com/audio'
+        def thread(target,**kw):return types.SimpleNamespace(start=target)
+        with patch.object(sr_player.threading,'Thread',side_effect=thread),patch.object(sr_player,'_url_stream',side_effect=stopped):
+            self.assertTrue(player._recover_interruption())
+        player._spawn.assert_not_called()
+
+    def test_elapsed_counts_played_samples_instead_of_network_wait(self):
+        player=self.interrupted_player(position=12);player.acc=30;player.t0=sr_player.time.time()-90
+        self.assertEqual(player._elapsed(),42)
+
+    def test_audio_worker_errors_are_not_successful_completion(self):
+        worker=Mock();worker.is_alive.return_value=False
+        proc=audio_out.PlayerProc(thread=worker,result=[1],progress=[3.5])
+        self.assertEqual(proc.poll(),1);self.assertEqual(proc.played_seconds,3.5)
+
 if __name__=='__main__':unittest.main()

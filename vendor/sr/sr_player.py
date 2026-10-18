@@ -994,6 +994,7 @@ class SongRequest:
                 if not self.atual:
                     return
                 if self.paused:
+                    self.atual['_recoveries']=0
                     self.paused = False
                     self.t0 = time.time()
                     self._spawn(self.atual.get("arquivo") or "", ss=self.acc)
@@ -1190,7 +1191,8 @@ class SongRequest:
     def _elapsed(self) -> float:
         if not self.atual:
             return 0.0
-        extra = 0.0 if self.paused or self.proc is None else (time.time() - self.t0 if self.t0 else 0)
+        played = getattr(self.proc, 'played_seconds', None)
+        extra = 0.0 if self.paused or self.proc is None else played if isinstance(played,(float,int)) else (time.time() - self.t0 if self.t0 else 0)
         dur = float(self.atual.get("dur") or 0)
         val = self.acc + extra
         return min(dur, val) if dur else val
@@ -1228,7 +1230,7 @@ class SongRequest:
                     ],
                     "fonte_atual": self._fonte_de(self.atual) if self.atual else "",
                     "erro": self.erro,
-                    "estado": 'playing' if self.atual and not self.paused and self.proc is not None and self.proc.poll() is None else 'paused' if self.atual and self.paused else 'error' if (self.atual and self.erro) or any(x.get('status')=='erro' for x in self.fila) else 'loading' if any(x.get('status') in ('fila','busca','baixa','stream') for x in self.fila) else 'idle',
+                    "estado": 'playing' if self.atual and not self.paused and self.proc is not None and self.proc.poll() is None else 'loading' if getattr(self,'_recovering',False) and self.atual and not self.paused else 'paused' if self.atual and self.paused else 'error' if (self.atual and self.erro) or any(x.get('status')=='erro' for x in self.fila) else 'loading' if any(x.get('status') in ('fila','busca','baixa','stream') for x in self.fila) else 'idle',
                     "tem_ytdlp": bool(_YTD_CACHE.get('cmd')),
                     "tem_player": bool(_player() or _ffmpeg()),
                     "instalando": _INSTALANDO,
@@ -1264,10 +1266,7 @@ class SongRequest:
                         snap = self._snap()
                     else:
                         if self.atual and self.proc is not None and self.proc.poll() is not None:
-                            if (time.time() - self._spawn_t0) < 2.0 and not self._retried:
-                                self._retried = True
-                                self._spawn(self.atual.get("stream") or self.atual.get("arquivo") or "", ss=0, forcar_padrao=True)
-                            else:
+                            if not self._recover_interruption():
                                 ended = self.atual
                                 self.atual = None
                                 self.acc = 0
@@ -1281,6 +1280,7 @@ class SongRequest:
                             nxt = self._pegar_proximo()
                             if nxt:
                                 self.atual = nxt
+                                nxt.pop('_recoveries',None)
                                 self.paused = False
                                 self.acc = 0
                                 self.t0 = time.time()
@@ -1307,6 +1307,44 @@ class SongRequest:
                     pass
             except Exception as exc:
                 self.erro = str(exc)
+
+    def _recover_interruption(self):
+        """Do not treat an early decoder exit as the end of the song."""
+        item=self.atual
+        position=self._elapsed()
+        duration=float(item.get('dur') or 0)
+        code=self.proc.poll()
+        if not (code or (duration > 0 and position < duration - 2)):
+            return False
+        self.acc=position
+        self._kill()
+        attempts=int(item.get('_recoveries') or 0)
+        if attempts >= 3:
+            self.paused=True
+            self.erro='Áudio interrompido antes do fim. Pedido preservado; use Reproduzir para tentar retomar.'
+            return True
+        item['_recoveries']=attempts+1
+        self._recovering=True
+        self.erro=f'Conexão de áudio interrompida em {fmt(position)}. Retomando do mesmo ponto ({attempts+1}/3)…'
+        def recover():
+            source=''
+            try:
+                source=_url_stream(item['id']) if item.get('id') else item.get('stream') or item.get('arquivo') or ''
+                with self._lock:
+                    if self.atual is not item or self.paused or self._stop or self.proc is not None:return
+                    if source:
+                        item['stream']=source;item['arquivo']=source
+                        self._spawn(source,ss=position)
+                    if self.proc is None:
+                        self.paused=True
+                        self.erro=_stream_erro() if not source else self.erro or 'Saída de áudio indisponível. Pedido preservado.'
+            except Exception:
+                with self._lock:
+                    if self.atual is item and self.proc is None:
+                        self.paused=True;self.erro='Falha ao retomar áudio. Pedido e posição preservados.'
+            finally:self._recovering=False
+        threading.Thread(target=recover,daemon=True).start()
+        return True
 
     def _snap(self) -> dict:
         # ========================================================

@@ -61,3 +61,11 @@ Validação: teste real de tom de 1 segundo a 15% concluiu usando a saída PRO X
 
 ## Limpeza de áudio — 0.9.4
 Os áudios de fala são temporários e removidos no bloco finally após cada uso. Ao fechar, o motor é encerrado antes da limpeza dos arquivos de áudio nas pastas privadas tmp_sr, tmp_audio e tmp_leitura. A limpeza é repetida na inicialização do motor para recuperar restos de travamentos. Não segue links simbólicos, não apaga arquivos externos de alertas, TXT, histórico de títulos ou credenciais. SR transmite áudio sem download permanente; o medidor de loopback usa amostras em memória e não grava a transmissão.
+
+## Correção 0.9.6 — continuidade e atraso
+- O player não trata mais toda saída do decoder como fim natural: se a faixa terminar antes da duração esperada ou com erro, preserva o pedido, renova a URL e retoma da posição tocada até três vezes. Esgotado o limite, pausa com erro visível, sem descartar a faixa.
+- A saída PCM selecionada usa reconexão HTTP/rede e timeout de leitura. O progresso conta amostras entregues à saída, sem avançar pelo tempo gasto esperando rede. Referência: https://ffmpeg.org/ffmpeg-protocols.html#http
+- Leitor: fila padrão de 10, validade de 15 segundos e texto falado de até 300 caracteres, configuráveis na aba. Prioridades e bloqueios continuam valendo; a validade também se aplica a prioritários. No limite da fila, remove a mensagem mais antiga da pior prioridade elegível. Texto integral permanece no chat/TXT.
+- Intervalo mínimo contado desde o início da preparação, sem pausa extra depois de cada áudio. Síntese interrompida por timeout total de 8 segundos; mensagens vencidas não começam a tocar.
+- Testes: 19 JavaScript; 12 regressões do áudio; integração FFmpeg com queda HTTP no meio de uma faixa de 12 s, recebida inteira após reconexão; abertura/interface Electron. Em teste externo, Lalala (Official Video), duração informada 178 s, decodificou 177,284 s com saída 0 (diferença inferior a 1 s). Esse teste usou saída PCM de teste, sem reproduzir a faixa nos alto-falantes nem salvar o áudio. Voz real: primeiro bloco 1,016 s; síntese completa 1,636 s, apenas memória.
+- A release 0.9.5 permanece em rascunho enquanto o reparo 0.9.6 é validado localmente. A branch pública já recebeu 0.9.5 antes do relato de interrupção; 0.9.6 ainda não foi enviada.

@@ -41,14 +41,22 @@ def command(action,args):
     if action=='speak':
         import edge_tts,audio_out
         VOICE_STOP.clear();c=args['config'];m=args['message']
-        text=(m['user']+' diz: ' if c['sayName'] else '')+m['text'][:1000]
+        text=(m['user']+' diz: ' if c['sayName'] else '')+m['text'][:int(c.get('maxChars',300))]
         file=DATA/'tmp_sr'/('reader-'+uuid.uuid4().hex+'.mp3')
-        async def synthesize():await edge_tts.Communicate(text,c['voice'],rate=f"{int(c['rate']):+d}%",connect_timeout=8,receive_timeout=20).save(str(file))
+        deadline=min(time.time()+8,float(m.get('expiresAt') or (time.time()+8000)*1000)/1000)
+        async def synthesize():
+            with file.open('wb') as output:
+                async for chunk in edge_tts.Communicate(text,c['voice'],rate=f"{int(c['rate']):+d}%",connect_timeout=5,receive_timeout=8).stream():
+                    if VOICE_STOP.is_set():return
+                    if chunk['type']=='audio':output.write(chunk['data'])
         try:
-            for attempt in range(2):
-                try:asyncio.run(synthesize());break
-                except Exception:
-                    if attempt or VOICE_STOP.wait(1):raise
+            remaining=deadline-time.time()
+            if remaining<=0:raise RuntimeError('Mensagem antiga descartada da leitura para acompanhar a live.')
+            async def bounded():await asyncio.wait_for(synthesize(),timeout=remaining)
+            try:asyncio.run(bounded())
+            except (TimeoutError,asyncio.TimeoutError):raise RuntimeError('Geração da voz demorou mais de 8 segundos; mensagem descartada para evitar atraso.')
+            if m.get('expiresAt') and time.time()*1000>=m['expiresAt']:
+                raise RuntimeError('Mensagem antiga descartada da leitura para acompanhar a live.')
             if not VOICE_STOP.is_set():
                 result=audio_out.tocar_bloqueado(str(file),saida=c['output'],volume=c['volume'],parar=lambda:'parar' if VOICE_STOP.is_set() else '',papel='leitura')
                 if result=='erro':raise RuntimeError('Saída de leitura indisponível; selecione novamente o dispositivo.')

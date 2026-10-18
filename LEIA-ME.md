@@ -1,5 +1,11 @@
 # Kaia Chat
 
+TESTE LOCAL 0.9.6 — CONTINUIDADE DO SR E LEITURA RECENTE
+O SR detecta encerramento antes da duração prevista, renova o link e tenta retomar do mesmo ponto até três vezes; se falhar, preserva música e posição e mostra o erro. A saída selecionada reconecta em falhas HTTP/rede. A barra usa amostras efetivamente enviadas à saída.
+No Leitor, configure Atraso máximo (padrão 15 segundos), Máximo na fila (10) e Caracteres por fala (300). Mensagens antigas são puladas somente na voz; o chat e o TXT seguem completos. O intervalo é mínimo entre inícios, sem pausa extra após uma fala longa. Geração de voz tem limite de 8 segundos para evitar prender a fila.
+Esta correção aguarda seu teste local antes de atualizar a release em rascunho.
+
+
 CORREÇÃO 0.9.5 — MODO JOGO
 O último botão deixa somente os textos do chat na tela, com fundo transparente e passagem de cliques para o jogo, sem esconder a janela. Ctrl+Shift+F9 restaura os controles. Posicione e redimensione antes de ativar. SR, leitor e conexões continuam ativos.
 

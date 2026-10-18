@@ -1,6 +1,6 @@
 # Kaia Chat
 
-**Versão 0.9.5:** abas Leitor e SR/Spotify, áudio independente, limpeza de áudios temporários e modo jogo transparente com passagem de cliques. Veja [Leitor e SR](docs/LEITOR-E-SR.md) e o [tutorial Spotify](docs/SPOTIFY.md).
+**Versão 0.9.6:** SR com reconexão e retomada de faixas, leitor com limite de atraso e fila, áudio independente, limpeza de temporários e modo jogo transparente. Veja [Leitor e SR](docs/LEITOR-E-SR.md) e o [tutorial Spotify](docs/SPOTIFY.md).
 
 Overlay de leitura para **Twitch, Kick, Starvios e uma plataforma personalizada por API JSON**, feito para Windows. Configure cada canal e seu áudio independentemente e reúna as mensagens em um painel transparente sobre o jogo.
 

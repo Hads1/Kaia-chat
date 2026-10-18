@@ -57,12 +57,36 @@
               value="5"
           /></label>
           <label
-            >Intervalo entre leituras (segundos)<input
+            >Intervalo mínimo entre inícios (segundos)<input
               id="reader-interval"
               type="number"
               min="0"
               max="300"
-              value="5"
+              value="0"
+          /></label>
+          <label
+            >Atraso máximo para iniciar a fala (segundos)<input
+              id="reader-maxWait"
+              type="number"
+              min="5"
+              max="120"
+              value="15"
+          /></label>
+          <label
+            >Máximo de mensagens aguardando<input
+              id="reader-maxQueue"
+              type="number"
+              min="1"
+              max="50"
+              value="10"
+          /></label>
+          <label
+            >Máximo de caracteres por fala<input
+              id="reader-maxChars"
+              type="number"
+              min="50"
+              max="1000"
+              value="300"
           /></label>
           <label
             >Volume (%)<input
@@ -126,8 +150,11 @@
         <p>
           Alta prioridade lê todas as mensagens e passa à frente da fila, após
           terminar a fala atual. Prioridade normal e baixa têm contagens
-          separadas. A fila comporta 100 mensagens. Histórico recuperado ao
-          conectar não é falado.
+          separadas. Para acompanhar a live, mensagens antigas são descartadas
+          conforme o atraso máximo, inclusive as prioritárias. Em fila cheia, as
+          mais antigas de menor prioridade saem primeiro. O intervalo conta
+          desde o início da preparação, sem acrescentar uma pausa após cada
+          fala. Histórico recuperado ao conectar não é falado.
         </p>
         <div class="feature-actions">
           <button id="save-reader" class="primary">Salvar leitura</button

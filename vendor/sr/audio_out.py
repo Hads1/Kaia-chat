@@ -223,13 +223,22 @@ def _popen(cmd, env=None, err_path=None, stdout=None):
 class PlayerProc:
     """Parece um Popen: poll/terminate/kill/wait."""
 
-    def __init__(self, sub=None, thread=None, stop=None):
+    def __init__(self, sub=None, thread=None, stop=None, progress=None, result=None):
         self._sub = sub
         self._th = thread
         self._stop = stop or threading.Event()
         self._ret = None
+        self._progress = progress
+        self._result = result
+
+    @property
+    def played_seconds(self):
+        return self._progress[0] if self._progress is not None else None
 
     def poll(self):
+        if self._th is not None:
+            if self._th.is_alive():return None
+            if self._result is not None:return self._result[0]
         if self._sub is not None:
             code = self._sub.poll()
             if self._th is None:
@@ -319,6 +328,10 @@ def _play_sd(arquivo: str, device_idx: int, volume: int, ss: float, err_path: Pa
         return None
 
     cmd = [ff, "-hide_banner", "-nostdin", "-loglevel", "error"]
+    if str(arquivo).startswith(('http://','https://')):
+        cmd += ['-reconnect','1','-reconnect_streamed','1','-reconnect_on_network_error','1',
+                '-reconnect_on_http_error','408,429,5xx','-reconnect_delay_max','4',
+                '-reconnect_max_retries','3','-rw_timeout','15000000']
     if ss >= 0.25:
         cmd += ["-ss", f"{ss:.2f}"]
     cmd += [
@@ -338,6 +351,8 @@ def _play_sd(arquivo: str, device_idx: int, volume: int, ss: float, err_path: Pa
     stop = threading.Event()
     ready = threading.Event()
     opened = [False]
+    progress = [0.0]
+    result = [0]
     err_path.parent.mkdir(parents=True, exist_ok=True)
 
     def worker(holder):
@@ -380,17 +395,18 @@ def _play_sd(arquivo: str, device_idx: int, volume: int, ss: float, err_path: Pa
                     break
                 playing=(arr.reshape(-1, 2) * gain).copy()
                 stream.write(playing)
+                progress[0] += len(playing) / 48000
                 if meter:meter.publish(playing)
             try:
                 stream.stop()
                 stream.close()
             except Exception:
                 pass
-            try:
-                sub.terminate()
-            except Exception:
-                pass
+            if not stop.is_set():
+                try:result[0] = sub.wait(timeout=2)
+                except subprocess.TimeoutExpired:result[0] = 1
         except Exception as exc:
+            result[0] = 1
             LAST_ERR = str(exc)
             try:
                 err_path.write_text(str(exc), encoding="utf-8")
@@ -409,6 +425,8 @@ def _play_sd(arquivo: str, device_idx: int, volume: int, ss: float, err_path: Pa
                     sub.wait(timeout=2)
                 except Exception:
                     pass
+                try:sub.stdout.close()
+                except Exception:pass
             if errf is not None:
                 errf.close()
 
@@ -419,7 +437,7 @@ def _play_sd(arquivo: str, device_idx: int, volume: int, ss: float, err_path: Pa
     if not opened[0]:
         stop.set()
         return None
-    return PlayerProc(sub=holder[0], thread=th, stop=stop)
+    return PlayerProc(sub=holder[0], thread=th, stop=stop, progress=progress, result=result)
 
 
 def spawn(arquivo: str, saida: str = "", volume: int = 80, ss: float = 0.0, papel: str = "sr"):

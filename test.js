@@ -661,3 +661,71 @@ test('limpeza remove somente áudio temporário privado e preserva histórico e 
   await fs.access(path.join(folder, 'meu-alerta.mp3'));
   assert.deepEqual(await cleanupMedia(folder), []);
 });
+
+test('leitor limita atraso em rajadas e preserva prioridade entre mensagens recentes', async () => {
+  let now = 100000;
+  const spoken = [],
+    waiters = [];
+  const reader = new ReaderQueue({
+    now: () => now,
+    speak: (m) => {
+      spoken.push(m);
+      return new Promise((r) => waiters.push(r));
+    },
+  });
+  reader.configure({
+    enabled: true,
+    output: 'Headset',
+    interval: 0,
+    maxWait: 5,
+    maxQueue: 3,
+    maxChars: 50,
+    high: ['vip'],
+  });
+  reader.receive({ user: 'primeiro', text: 'a'.repeat(80) });
+  for (let i = 0; i < 20; i++)
+    reader.receive({ user: 'normal' + i, text: 'mensagem' });
+  reader.receive({ user: 'vip', text: 'urgente' });
+  assert.equal(reader.queue.length, 3);
+  assert.equal(reader.queue[0].user, 'vip');
+  assert.equal(spoken[0].text.length, 50);
+  assert.ok(reader.discarded >= 18);
+  now += 6000;
+  waiters.shift()();
+  await new Promise((r) => setImmediate(r));
+  assert.equal(spoken.length, 1);
+  assert.equal(reader.queue.length, 0);
+  reader.receive({ user: 'nova', text: 'atual' });
+  assert.equal(spoken.at(-1).user, 'nova');
+  reader.clear();
+  waiters.shift()();
+  await new Promise((r) => setImmediate(r));
+});
+
+test('intervalo do leitor não acrescenta outra pausa depois de uma fala longa', async () => {
+  let now = 100000;
+  const spoken = [],
+    waiters = [];
+  const reader = new ReaderQueue({
+    now: () => now,
+    speak: (m) => {
+      spoken.push(m.user);
+      return new Promise((r) => waiters.push(r));
+    },
+  });
+  reader.configure({
+    enabled: true,
+    output: 'Headset',
+    interval: 5,
+    maxWait: 30,
+  });
+  reader.receive({ user: 'a', text: 'fala' });
+  reader.receive({ user: 'b', text: 'fala' });
+  now += 7000;
+  waiters.shift()();
+  await new Promise((r) => setImmediate(r));
+  assert.deepEqual(spoken, ['a', 'b']);
+  reader.clear();
+  waiters.shift()();
+  await new Promise((r) => setImmediate(r));
+});
