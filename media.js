@@ -372,6 +372,8 @@ function installMedia({
     return settings.sr;
   });
   const actions = new Set([
+    'save_playlist',
+    'restore_playlist',
     'pedir',
     'adicionar_playlist',
     'play_pause',
@@ -411,7 +413,10 @@ function installMedia({
       });
     if (action === 'retry') await syncCookies();
     const result = await backend.call(action, args);
-    if (action === 'edit_queue' && args[1] === 'move') {
+    if (
+      action === 'restore_playlist' ||
+      (action === 'edit_queue' && args[1] === 'move')
+    ) {
       settings.sr.shuffle = false;
       saveSettings();
       emit('sr-order-manual', true);
@@ -429,6 +434,7 @@ function installMedia({
   }
   ipcMain.handle('sr-action', (_, action, args) => runSR(action, args));
   ipcMain.handle('spotify-action', async (_, action, value) => {
+    if (action === 'enabled') return spotify.setEnabled(value);
     if (action === 'save') return spotify.configure(value);
     if (action === 'connect') return spotify.connect();
     if (action === 'disconnect') return spotify.disconnect();

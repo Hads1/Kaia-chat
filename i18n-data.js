@@ -729,7 +729,13 @@
     "Último alerta recebido": "Último alerta recebido",
     "Último alerta ·": "Último alerta ·",
     "⋮⋮ Arraste para mover a janela": "⋮⋮ Arraste para mover a janela",
-    "✦ KAIA": "✦ KAIA"
+    "✦ KAIA": "✦ KAIA",
+    "Exibir Spotify no player e no widget": "Exibir Spotify no player e no widget",
+    "Salvar playlist": "Salvar playlist",
+    "Recuperar última playlist": "Recuperar última playlist",
+    "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.",
+    "Playlist salva.": "Playlist salva.",
+    "Playlist recuperada.": "Playlist recuperada."
   },
   "en": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { border-radius: 0; } #tit { text-transform: uppercase; }",
@@ -1460,7 +1466,13 @@
     "Último alerta recebido": "Last alert received",
     "Último alerta ·": "Last alert ·",
     "⋮⋮ Arraste para mover a janela": "⋮⋮ Drag to move window",
-    "✦ KAIA": "✦ KAIA"
+    "✦ KAIA": "✦ KAIA",
+    "Exibir Spotify no player e no widget": "Show Spotify in the player and widget",
+    "Salvar playlist": "Save playlist",
+    "Recuperar última playlist": "Restore last playlist",
+    "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "Restoring replaces the waiting playlist and keeps the current track and chat requests.",
+    "Playlist salva.": "Playlist saved.",
+    "Playlist recuperada.": "Playlist restored."
   },
   "es": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { radio-borde: 0; } #tit { transformación de texto: mayúscula; }",
@@ -2191,7 +2203,13 @@
     "Último alerta recebido": "Última alerta recibida",
     "Último alerta ·": "Última alerta ·",
     "⋮⋮ Arraste para mover a janela": "⋮⋮ Arrastrar para mover la ventana",
-    "✦ KAIA": "✦ KAIA"
+    "✦ KAIA": "✦ KAIA",
+    "Exibir Spotify no player e no widget": "Mostrar Spotify en el reproductor y el widget",
+    "Salvar playlist": "Guardar playlist",
+    "Recuperar última playlist": "Recuperar última playlist",
+    "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "La recuperación reemplaza la playlist en espera y conserva la canción actual y los pedidos del chat.",
+    "Playlist salva.": "Playlist guardada.",
+    "Playlist recuperada.": "Playlist recuperada."
   },
   "fr": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { border-radius: 0; } #tit { text-transform : majuscule ; }",
@@ -2922,7 +2940,13 @@
     "Último alerta recebido": "Dernière alerte reçue",
     "Último alerta ·": "Dernière alerte ·",
     "⋮⋮ Arraste para mover a janela": "⋮⋮ Faites glisser pour déplacer la fenêtre",
-    "✦ KAIA": "✦ KAIA"
+    "✦ KAIA": "✦ KAIA",
+    "Exibir Spotify no player e no widget": "Afficher Spotify dans le lecteur et le widget",
+    "Salvar playlist": "Enregistrer la playlist",
+    "Recuperar última playlist": "Restaurer la dernière playlist",
+    "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "La restauration remplace la playlist en attente et conserve le morceau actuel et les demandes du chat.",
+    "Playlist salva.": "Playlist enregistrée.",
+    "Playlist recuperada.": "Playlist restaurée."
   },
   "de": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { Randradius: 0; } #tit { text-transform: Uppercase; }",
@@ -3653,7 +3677,13 @@
     "Último alerta recebido": "Letzte erhaltene Warnung",
     "Último alerta ·": "Letzte Warnung ·",
     "⋮⋮ Arraste para mover a janela": "⋮⋮ Ziehen, um das Fenster zu verschieben",
-    "✦ KAIA": "✦ KAIA"
+    "✦ KAIA": "✦ KAIA",
+    "Exibir Spotify no player e no widget": "Spotify im Player und Widget anzeigen",
+    "Salvar playlist": "Playlist speichern",
+    "Recuperar última playlist": "Letzte Playlist wiederherstellen",
+    "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "Die Wiederherstellung ersetzt die wartende Playlist und behält den aktuellen Titel und Chatwünsche.",
+    "Playlist salva.": "Playlist gespeichert.",
+    "Playlist recuperada.": "Playlist wiederhergestellt."
   },
   "it": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { raggio-bordo: 0; } #tit { text-transform: maiuscolo; }",
@@ -4384,7 +4414,13 @@
     "Último alerta recebido": "Ultimo avviso ricevuto",
     "Último alerta ·": "Ultimo avviso ·",
     "⋮⋮ Arraste para mover a janela": "⋮⋮ Trascina per spostare la finestra",
-    "✦ KAIA": "✦ KAIA"
+    "✦ KAIA": "✦ KAIA",
+    "Exibir Spotify no player e no widget": "Mostra Spotify nel lettore e nel widget",
+    "Salvar playlist": "Salva playlist",
+    "Recuperar última playlist": "Ripristina ultima playlist",
+    "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "Il ripristino sostituisce la playlist in attesa e mantiene il brano attuale e le richieste della chat.",
+    "Playlist salva.": "Playlist salvata.",
+    "Playlist recuperada.": "Playlist ripristinata."
   },
   "ru": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box {граница-радиус: 0; } #tit {текстовое преобразование: верхний регистр; }",
@@ -5115,7 +5151,13 @@
     "Último alerta recebido": "Последнее полученное оповещение",
     "Último alerta ·": "Последнее оповещение ·",
     "⋮⋮ Arraste para mover a janela": "⋮⋮ Перетащите, чтобы переместить окно.",
-    "✦ KAIA": "✦ KAIA"
+    "✦ KAIA": "✦ KAIA",
+    "Exibir Spotify no player e no widget": "Показывать Spotify в плеере и виджете",
+    "Salvar playlist": "Сохранить плейлист",
+    "Recuperar última playlist": "Восстановить последний плейлист",
+    "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "Восстановление заменяет ожидающий плейлист, сохраняя текущий трек и запросы чата.",
+    "Playlist salva.": "Плейлист сохранён.",
+    "Playlist recuperada.": "Плейлист восстановлен."
   },
   "ar": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { نصف قطر الحدود: 0؛ } #tit { تحويل النص: أحرف كبيرة؛ }",
@@ -5846,7 +5888,13 @@
     "Último alerta recebido": "تم تلقي التنبيه الأخير",
     "Último alerta ·": "التنبيه الأخير ·",
     "⋮⋮ Arraste para mover a janela": "⋮⋮ اسحب لتحريك النافذة",
-    "✦ KAIA": "✦ KAIA"
+    "✦ KAIA": "✦ KAIA",
+    "Exibir Spotify no player e no widget": "عرض Spotify في المشغل والأداة",
+    "Salvar playlist": "حفظ قائمة التشغيل",
+    "Recuperar última playlist": "استعادة آخر قائمة تشغيل",
+    "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "تستبدل الاستعادة قائمة الانتظار وتحافظ على المقطع الحالي وطلبات الدردشة.",
+    "Playlist salva.": "تم حفظ قائمة التشغيل.",
+    "Playlist recuperada.": "تمت استعادة قائمة التشغيل."
   },
   "hi": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#बॉक्स { सीमा-त्रिज्या: 0; } #tit { टेक्स्ट-ट्रांसफ़ॉर्म: अपरकेस; }",
@@ -6577,7 +6625,13 @@
     "Último alerta recebido": "अंतिम चेतावनी प्राप्त हुई",
     "Último alerta ·": "नवीनतम चेतावनी ·",
     "⋮⋮ Arraste para mover a janela": "⋮⋮ विंडो को स्थानांतरित करने के लिए खींचें",
-    "✦ KAIA": "✦ KAIA"
+    "✦ KAIA": "✦ KAIA",
+    "Exibir Spotify no player e no widget": "प्लेयर और विजेट में Spotify दिखाएँ",
+    "Salvar playlist": "प्लेलिस्ट सहेजें",
+    "Recuperar última playlist": "पिछली प्लेलिस्ट पुनर्स्थापित करें",
+    "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "पुनर्स्थापना प्रतीक्षारत प्लेलिस्ट को बदलती है और वर्तमान गाना व चैट अनुरोध रखती है।",
+    "Playlist salva.": "प्लेलिस्ट सहेजी गई।",
+    "Playlist recuperada.": "प्लेलिस्ट पुनर्स्थापित की गई।"
   },
   "bn": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#বক্স { সীমানা-ব্যাসার্ধ: 0; } #tit { টেক্সট-ট্রান্সফর্ম: বড় হাতের অক্ষর; }",
@@ -7308,7 +7362,13 @@
     "Último alerta recebido": "শেষ সতর্কতা গৃহীত হয়েছে",
     "Último alerta ·": "সর্বশেষ সতর্কতা ·",
     "⋮⋮ Arraste para mover a janela": "⋮⋮ উইন্ডোটি সরাতে টেনে আনুন",
-    "✦ KAIA": "✦ KAIA"
+    "✦ KAIA": "✦ KAIA",
+    "Exibir Spotify no player e no widget": "প্লেয়ার ও উইজেটে Spotify দেখান",
+    "Salvar playlist": "প্লেলিস্ট সংরক্ষণ করুন",
+    "Recuperar última playlist": "শেষ প্লেলিস্ট পুনরুদ্ধার করুন",
+    "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "পুনরুদ্ধার অপেক্ষমাণ প্লেলিস্ট বদলায় এবং বর্তমান গান ও চ্যাটের অনুরোধ রাখে।",
+    "Playlist salva.": "প্লেলিস্ট সংরক্ষিত।",
+    "Playlist recuperada.": "প্লেলিস্ট পুনরুদ্ধার হয়েছে।"
   },
   "id": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { radius batas: 0; } #tit { transformasi teks: huruf besar; }",
@@ -8039,7 +8099,13 @@
     "Último alerta recebido": "Peringatan terakhir diterima",
     "Último alerta ·": "Peringatan terbaru ·",
     "⋮⋮ Arraste para mover a janela": "⋮⋮ Tarik untuk memindahkan jendela",
-    "✦ KAIA": "✦ KAIA"
+    "✦ KAIA": "✦ KAIA",
+    "Exibir Spotify no player e no widget": "Tampilkan Spotify di pemutar dan widget",
+    "Salvar playlist": "Simpan playlist",
+    "Recuperar última playlist": "Pulihkan playlist terakhir",
+    "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "Pemulihan mengganti playlist yang menunggu dan mempertahankan lagu aktif serta permintaan chat.",
+    "Playlist salva.": "Playlist disimpan.",
+    "Playlist recuperada.": "Playlist dipulihkan."
   },
   "ja": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { 境界半径: 0; } #tit {テキスト変換: 大文字; }",
@@ -8770,7 +8836,13 @@
     "Último alerta recebido": "最後に受信したアラート",
     "Último alerta ·": "最新のアラート ·",
     "⋮⋮ Arraste para mover a janela": "⋮⋮ ドラッグしてウィンドウを移動します",
-    "✦ KAIA": "✦ KAIA"
+    "✦ KAIA": "✦ KAIA",
+    "Exibir Spotify no player e no widget": "プレーヤーとウィジェットにSpotifyを表示",
+    "Salvar playlist": "プレイリストを保存",
+    "Recuperar última playlist": "最後のプレイリストを復元",
+    "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "復元すると待機中のプレイリストが置き換わります。再生中の曲とチャットのリクエストは保持されます。",
+    "Playlist salva.": "プレイリストを保存しました。",
+    "Playlist recuperada.": "プレイリストを復元しました。"
   },
   "ko": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { 테두리 반경: 0; } #tit { 텍스트 변환: 대문자; }",
@@ -9501,7 +9573,13 @@
     "Último alerta recebido": "마지막으로 받은 알림",
     "Último alerta ·": "최신 알림 ·",
     "⋮⋮ Arraste para mover a janela": "⋮⋮ 창을 이동하려면 드래그하세요.",
-    "✦ KAIA": "✦ KAIA"
+    "✦ KAIA": "✦ KAIA",
+    "Exibir Spotify no player e no widget": "플레이어와 위젯에 Spotify 표시",
+    "Salvar playlist": "재생목록 저장",
+    "Recuperar última playlist": "마지막 재생목록 복원",
+    "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "복원 시 대기 중인 재생목록을 교체하며 현재 곡과 채팅 요청은 유지합니다.",
+    "Playlist salva.": "재생목록을 저장했습니다.",
+    "Playlist recuperada.": "재생목록을 복원했습니다."
   },
   "zh-CN": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { 边框半径：0; } #tit { 文本转换：大写； }",
@@ -10232,6 +10310,12 @@
     "Último alerta recebido": "收到的最后警报",
     "Último alerta ·": "最新提醒·",
     "⋮⋮ Arraste para mover a janela": "⋮⋮拖动以移动窗口",
-    "✦ KAIA": "✦ KAIA"
+    "✦ KAIA": "✦ KAIA",
+    "Exibir Spotify no player e no widget": "在播放器和小组件中显示 Spotify",
+    "Salvar playlist": "保存播放列表",
+    "Recuperar última playlist": "恢复上次的播放列表",
+    "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "恢复将替换等待中的播放列表，并保留当前歌曲和聊天点歌。",
+    "Playlist salva.": "播放列表已保存。",
+    "Playlist recuperada.": "播放列表已恢复。"
   }
 };if(typeof module==='object')module.exports=data;else root.KaiaTranslations=data;})(typeof window==='object'?window:globalThis);

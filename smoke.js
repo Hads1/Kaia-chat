@@ -337,7 +337,7 @@ module.exports = async (win, app, emit, config, transcript) => {
         document.getElementById('tab-chat').click();
         const toolbar=document.querySelector('.toolbar').getBoundingClientRect();
         const buttons=[...document.querySelectorAll('.toolbar button')].map(b=>b.getBoundingClientRect());
-        const chatOK=document.body.scrollWidth<=innerWidth&&buttons.every(b=>b.left>=0&&b.right<=innerWidth&&b.bottom<=innerHeight)&&toolbar.bottom<=innerHeight;
+        const brandBox=document.querySelector(".brand").getBoundingClientRect(),languageBox=document.getElementById("language-toggle").getBoundingClientRect(); const headerOK=brandBox.right<=languageBox.left+1&&languageBox.right<=innerWidth-130; const chatOK=headerOK&&document.body.scrollWidth<=innerWidth&&buttons.every(b=>b.left>=0&&b.right<=innerWidth&&b.bottom<=innerHeight)&&toolbar.bottom<=innerHeight;
         document.getElementById('tab-widget').click();
         const panel=document.getElementById('widget-panel');
         const widgetOK=panel.scrollWidth<=panel.clientWidth;
@@ -366,10 +366,19 @@ module.exports = async (win, app, emit, config, transcript) => {
       const diagnose=await window.kaia.diagnoseMedia();
       const readerVisible=!document.getElementById('reader-panel').hidden&&getComputedStyle(document.getElementById('feed')).display==='none';
       document.getElementById('tab-sr').click();
-      const srVisible=!document.getElementById('sr-panel').hidden&&!!document.getElementById('spotify-client-id')&&document.getElementById('spotify-redirect').value.includes('127.0.0.1');
+      const srVisible=!!document.querySelector('[data-sr=save_playlist]')&&!!document.querySelector('[data-sr=restore_playlist]')&&!document.getElementById('sr-panel').hidden&&!!document.getElementById('spotify-client-id')&&document.getElementById('spotify-redirect').value.includes('127.0.0.1');
+      const toggle=document.getElementById('spotify-enabled');
+      const initiallyOff=toggle&&!toggle.checked;
+      toggle.click();
+      await new Promise(resolve=>setTimeout(resolve,100));
+      const enabled=(await window.kaia.spotifyAction('info')).enabled===true;
+      toggle.click();
+      await new Promise(resolve=>setTimeout(resolve,100));
+      const disabled=(await window.kaia.spotifyAction('info')).enabled===false&&!toggle.checked;
+      const spotifyToggle=initiallyOff&&enabled&&disabled;
       await window.kaia.srAction('set_volume',[42]);
       document.getElementById('tab-chat').click();
-      return {saved:saved.every===3&&saved.high.length===1&&saved.high[0]==='vip',readerVisible,srVisible,outputs:diagnose.outputs.length,runtime:diagnose.ffmpeg&&diagnose.ffplay,srUrl:data.srUrl,editorUrl:data.srEditorUrl};
+      return {saved:saved.every===3&&saved.high.length===1&&saved.high[0]==='vip',readerVisible,srVisible:srVisible&&spotifyToggle,spotifyToggle,outputs:diagnose.outputs.length,runtime:diagnose.ffmpeg&&diagnose.ffplay,srUrl:data.srUrl,editorUrl:data.srEditorUrl};
     })()`);
     await new Promise((resolve) => setTimeout(resolve, 300));
     const mediaFrame = new BrowserWindow({

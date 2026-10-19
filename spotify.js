@@ -38,19 +38,27 @@ class Spotify {
       clientId: this.auth.clientId || '',
       hasSecret: !!this.auth.clientSecret,
       connected: !!this.auth.refresh_token,
+      enabled: this.auth.enabled === true,
       redirect: REDIRECT,
-      current: this.current,
+      current: this.auth.enabled === true ? this.current : {},
     };
   }
   configure(value) {
     const id = String(value.clientId || '').trim();
     if (!/^[a-f0-9]{32}$/i.test(id))
       throw Error('Informe um Client ID válido do painel Spotify.');
-    if (id !== this.auth.clientId) this.auth = { clientId: id };
+    if (id !== this.auth.clientId)
+      this.auth = { clientId: id, enabled: this.auth.enabled };
     if (value.clientSecret)
       this.auth.clientSecret = String(value.clientSecret).trim();
     if (value.clearSecret) delete this.auth.clientSecret;
     this.save();
+    return this.info();
+  }
+  setEnabled(enabled) {
+    this.auth.enabled = enabled === true;
+    this.save();
+    this.start();
     return this.info();
   }
   async token(parameters) {
@@ -163,6 +171,7 @@ class Spotify {
   async poll() {
     if (
       this.polling ||
+      this.auth.enabled !== true ||
       !this.auth.refresh_token ||
       Date.now() < (this.backoff || 0)
     )
@@ -229,9 +238,11 @@ class Spotify {
           fonte_atual: 'spotify',
         };
       }
+      if (this.closed || this.auth.enabled !== true) return;
       this.writeCurrent();
       this.status('Spotify atualizado automaticamente.');
     } catch (error) {
+      if (this.closed || this.auth.enabled !== true) return;
       this.backoff = Math.max(this.backoff || 0, Date.now() + 15000);
       this.current = {
         ...this.current,
@@ -246,6 +257,8 @@ class Spotify {
     }
   }
   writeCurrent() {
+    if (this.auth.enabled !== true)
+      this.current = { enabled: false, estado: 'DISABLED', tocando: false };
     fs.mkdirSync(path.join(this.directory, 'avatar'), { recursive: true });
     const file = path.join(this.directory, 'avatar', 'spotify.json');
     fs.writeFileSync(file + '.tmp', JSON.stringify(this.current));
@@ -254,7 +267,8 @@ class Spotify {
   start() {
     clearInterval(this.timer);
     this.closed = false;
-    if (this.auth.refresh_token) {
+    if (this.auth.enabled !== true) this.writeCurrent();
+    if (this.auth.enabled === true && this.auth.refresh_token) {
       this.poll();
       this.timer = setInterval(() => this.poll(), 5000);
       this.timer.unref();
@@ -262,7 +276,7 @@ class Spotify {
   }
   disconnect() {
     this.close();
-    this.auth = { clientId: this.auth.clientId };
+    this.auth = { clientId: this.auth.clientId, enabled: this.auth.enabled };
     this.current = { estado: 'UNAVAILABLE', tocando: false };
     this.save();
     this.writeCurrent();

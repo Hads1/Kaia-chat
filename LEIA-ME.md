@@ -1,10 +1,18 @@
 # Kaia Chat
 
+PLAYLIST SALVA — 0.11.3
+Na playlist de fundo do SR, clique em Salvar playlist para guardar a lista atual e sua ordem neste computador. Recuperar última playlist restaura o último salvamento mesmo depois de fechar o programa. A recuperação substitui apenas a playlist aguardando, mantém a música atual e os pedidos do chat e desativa o aleatório para respeitar a ordem salva. Não salva arquivos de áudio. Se necessário, aumente o limite de músicas antes de recuperar. Salvar uma playlist vazia preserva o salvamento anterior.
+
+SPOTIFY OPCIONAL — 0.11.2
+Na aba SR / Spotify, marque Exibir Spotify no player e no widget para mostrar suas músicas quando o SR não estiver tocando. Desmarcada, a integração para de consultar o Spotify e o widget fica exclusivo para o SR. A escolha é salva automaticamente, sem apagar sua autorização. Isso não pausa músicas no aplicativo externo do Spotify.
+
+AJUSTES 0.11.1 — JANELA DO WINDOWS E IDIOMA
+A janela de configuração permite redimensionar e usar os layouts de encaixe do Windows. Passe o mouse sobre Maximizar no Windows 11 para escolher um layout, conforme as opções de Multitarefas do sistema. O seletor de idioma não se sobrepõe ao título. O modo de jogo continua transparente e com passagem de cliques; Ctrl+Shift+F9 recupera os controles. As demais funções foram preservadas.
+
 CORREÇÃO LOCAL 0.10.1 — MONITOR DE ALERTAS
 A leitura não aguarda mais o fim das animações: usa amostragem periódica e observação com espera limitada. Procura texto também em iframes acessíveis do mesmo domínio e shadow roots abertos. O preset Streamlabs inclui #alert-text e migra o seletor padrão antigo automaticamente; seletores personalizados são preservados.
 Salve as fontes e clique Abrir prévia desta fonte. Dispare um alerta de teste no painel Streamlabs e compare o que aparece nessa prévia. O status informa se encontrou elementos pelo seletor e se há iframe de outro domínio sem acesso. Sem nenhum alerta recebido, o botão de repetir fica desativado e não aparece mais uma mensagem técnica de IPC.
 A correção passou em widget local com animação contínua e alerta em iframe acessível. Recebimento do seu URL privado real ainda precisa ser validado com um alerta novo. Não publique esta versão antes do teste local.
-
 
 TESTE LOCAL 0.10.0 — ATALHOS, FILAS E ALERTAS
 Feche a versão anterior antes de abrir esta. O SR tem atalhos globais editáveis, pedidos e playlist de fundo separados, limites próprios, exclusão e ordem manual. Faixas pedidas por !sr são as próximas após terminar a atual; não interrompem a música em andamento.
@@ -15,16 +23,13 @@ Uma faixa inteira no topo serve para arrastar/encaixar a janela. Campos/painéis
 Atalhos: na aba SR, clique no campo e pressione a combinação, ou cole um acelerador Electron (Ctrl+Alt+P, Ctrl+Alt+Right, MediaPlayPause). Salvar detecta conflitos sem tomar atalhos de outro programa. F9/F10 com Ctrl+Shift são reservados.
 Importação de playlist passou para segundo plano, e a consulta de estado não aguarda o bloqueio do player. Os erros de comandos indicam qual operação demorou; os demais controles permanecem disponíveis.
 
-
 TESTE LOCAL 0.9.6 — CONTINUIDADE DO SR E LEITURA RECENTE
 O SR detecta encerramento antes da duração prevista, renova o link e tenta retomar do mesmo ponto até três vezes; se falhar, preserva música e posição e mostra o erro. A saída selecionada reconecta em falhas HTTP/rede. A barra usa amostras efetivamente enviadas à saída.
 No Leitor, configure Atraso máximo (padrão 15 segundos), Máximo na fila (10) e Caracteres por fala (300). Mensagens antigas são puladas somente na voz; o chat e o TXT seguem completos. O intervalo é mínimo entre inícios, sem pausa extra após uma fala longa. Geração de voz tem limite de 8 segundos para evitar prender a fila.
 Esta correção aguarda seu teste local antes de atualizar a release em rascunho.
 
-
 CORREÇÃO 0.9.5 — MODO JOGO
 O último botão deixa somente os textos do chat na tela, com fundo transparente e passagem de cliques para o jogo, sem esconder a janela. Ctrl+Shift+F9 restaura os controles. Posicione e redimensione antes de ativar. SR, leitor e conexões continuam ativos.
-
 
 CORREÇÃO 0.9.2 — PLAYER E LEITOR
 O Chat tem controles com ícones e barra de tempo arrastável; a aba SR também tem barra de posição. Falhas de áudio ficam visíveis na fila, sem simular reprodução. Se o YouTube pedir login, clique Conectar YouTube, entre no perfil dedicado do Chrome/Edge, teste o acesso e use Tentar pedido novamente. Não importe cache ou cookies manualmente. No leitor, escolha a saída antes de ativar; alterações são salvas automaticamente e Testar voz usa a saída atualmente selecionada. A versão continua em teste local, aguardando seu OK antes de publicar.

@@ -13,6 +13,8 @@
       if (srValido) {
         return sr;
       }
+      if (spotify?.enabled === false)
+        return { estado: 'IDLE', fonte_atual: 'sr', tocando: false };
       if (
         spotify &&
         idade(spotify) <= 90 &&

@@ -24,6 +24,7 @@ const widgetServer = new WidgetServer();
 const { installMedia } = require('./media');
 const locale = require('./i18n');
 const { voiceForLanguage } = require('./voice-catalog');
+const { createChatWindow } = require('./chat-window');
 const t = (text) => locale.translate(text, settings.language);
 let media;
 let displayMode;
@@ -147,6 +148,7 @@ function decorated() {
 }
 function emit(type, data) {
   if (type === 'settings' && 'overlay' in data && win && !win.isDestroyed()) {
+    win.setOverlayMode(data.overlay);
     win.setTitleBarOverlay(
       data.overlay
         ? { color: '#00000000', symbolColor: '#00000000', height: 1 }
@@ -201,12 +203,13 @@ app.whenReady().then(async () => {
   const workArea = screen.getDisplayNearestPoint(
     screen.getCursorScreenPoint(),
   ).workArea;
-  win = new BrowserWindow({
+  win = createChatWindow({
+    title: 'Kaia Chat',
     width: Math.min(510, workArea.width),
     height: Math.min(860, workArea.height),
     minWidth: Math.min(320, workArea.width),
     minHeight: Math.min(240, workArea.height),
-    transparent: true,
+    transparent: false,
     titleBarStyle: 'hidden',
     titleBarOverlay: { color: '#0d1019', symbolColor: '#eeeeee', height: 47 },
     resizable: true,
@@ -221,7 +224,7 @@ app.whenReady().then(async () => {
       backgroundThrottling: false,
     },
   });
-  win.setAlwaysOnTop(true, 'screen-saver');
+  win.setAlwaysOnTop(true);
   media = installMedia({
     win,
     directory: path.join(app.getPath('userData'), 'media'),
@@ -244,7 +247,11 @@ app.whenReady().then(async () => {
     state: () => ({ active: win.isMaximized(), snapped: win.isSnapped() }),
   };
   for (const event of ['maximize', 'unmaximize', 'resize'])
-    win.on(event, () => emit('display-state', displayMode.state()));
+    win.on(event, () =>
+      setImmediate(() => {
+        if (!win.isDestroyed()) emit('display-state', displayMode.state());
+      }),
+    );
   ipcMain.handle('display', (_, action) => {
     if (action === 'enter' || (action === 'toggle' && !displayMode.active))
       displayMode.enter();

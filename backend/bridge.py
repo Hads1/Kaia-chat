@@ -34,6 +34,9 @@ def player():
     return PLAYER
 def command(action,args):
     global LAST_STATE,CHAT_STOP
+    if action in ('save_playlist','restore_playlist'):
+        from playlist_snapshot import save_playlist,restore_playlist
+        return (save_playlist if action=='save_playlist' else restore_playlist)(player(),DATA/'saved-playlist.json')
     if action=='diagnose':
         import audio_out
         outputs=audio_out.listar_saidas()

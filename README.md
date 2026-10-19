@@ -1,6 +1,12 @@
 # Kaia Chat
 
-**Versão 0.11.0 — Multilíngue:** mesmas telas e funções em 14 idiomas, seletor com bandeiras e todas as 322 vozes do catálogo Microsoft Edge TTS consultado em 19/10/2026. Ao trocar a bandeira, a voz muda para o mesmo idioma, preservando o gênero quando disponível. Veja [Idiomas e vozes](docs/IDIOMAS.md). Veja [Leitor e SR](docs/LEITOR-E-SR.md) e o [tutorial Spotify](docs/SPOTIFY.md).
+**Novidade 0.11.3:** na playlist de fundo do SR, use **Salvar playlist** e **Recuperar última playlist**. O salvamento inclui a faixa de fundo atual e as faixas aguardando, na ordem configurada. A recuperação preserva a música em execução e os pedidos do chat e substitui a playlist aguardando, sem repetir a faixa de fundo que já estiver tocando. O último salvamento fica neste computador entre sessões, somente com metadados; nenhum áudio é armazenado. Se o limite atual for menor que a playlist salva, aumente-o antes de recuperar. Salvar uma lista vazia não apaga o último salvamento.
+
+**Novidade 0.11.2:** a opção **Exibir Spotify no player e no widget** ativa ou desativa o monitor do Spotify. Desmarcada por padrão, mantém o widget exclusivo para o SR. A escolha é salva no computador, preserva a autorização e não controla a reprodução no aplicativo externo do Spotify. Os pedidos do SR continuam tendo prioridade.
+
+**Versão 0.11.1 — Multilíngue:** corrigidos o encaixe e o redimensionamento nativos do Windows na janela de configuração e a sobreposição do seletor de idioma no cabeçalho. O modo de jogo mantém o chat transparente com passagem de cliques e recuperação por Ctrl+Shift+F9.
+
+Mesmas telas e funções em 14 idiomas, seletor com bandeiras e todas as 322 vozes do catálogo Microsoft Edge TTS consultado em 19/10/2026. Ao trocar a bandeira, a voz muda para o mesmo idioma, preservando o gênero quando disponível. Veja [Idiomas e vozes](docs/IDIOMAS.md). Veja [Leitor e SR](docs/LEITOR-E-SR.md) e o [tutorial Spotify](docs/SPOTIFY.md).
 
 Overlay de leitura para **Twitch, Kick, Starvios e uma plataforma personalizada por API JSON**, feito para Windows. Configure cada canal e seu áudio independentemente e reúna as mensagens em um painel transparente sobre o jogo.
 

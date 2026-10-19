@@ -270,6 +270,7 @@ test('Spotify protege tokens, renova automaticamente e usa PKCE com state valida
   });
   try {
     spotify.configure({ clientId: 'a'.repeat(32) });
+    spotify.setEnabled(true);
     await spotify.connect();
     const url = new URL(opened);
     assert.equal(url.searchParams.get('code_challenge_method'), 'S256');
@@ -1041,55 +1042,251 @@ test('pedido resolvido e texto de alerta chegam ao backend de voz com a leitura 
 });
 
 test('alerta aguarda duração configurada, fim do áudio e desaparecimento automático', () => {
-  const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
-  function fixture(seconds){
-    let clock=100000,configHandler,sample,shown=false,text='',playing=false;
-    const sent=[];
-    const view={frameElement:null,getComputedStyle:e=>({display:'block',visibility:'visible',opacity:e===parent&&!shown?'0':'1'})};
-    const document={defaultView:view,documentElement:{},querySelector(){return null;},querySelectorAll(q){return q==='audio,video'?[media]:q==='#alert-text'?[node]:[];}};
-    const parent={ownerDocument:document,parentElement:null,getRootNode:()=>document};
-    const node={ownerDocument:document,parentElement:parent,getClientRects:()=>[{}],get innerText(){return text;},contains:()=>false};
-    const media={get paused(){return !playing;},ended:false,readyState:4};
-    vm.runInNewContext(fs.readFileSync(path.join(__dirname,'alerts-preload.js'),'utf8'),{
-      require:()=>({ipcRenderer:{on:(_,f)=>configHandler=f,send:(channel,data)=>sent.push({channel,data,at:clock})}}),
-      document,Date:{now:()=>clock},MutationObserver:class{observe(){}disconnect(){}},
-      clearInterval(){},clearTimeout(){},setTimeout(){return 1;},setInterval:f=>{sample=f;return 1;}
-    });
-    configHandler(null,{selector:'#alert-text',durationSeconds:seconds});
-    return {tick(ms,state={}){clock+=ms;if('shown'in state)shown=state.shown;if('text'in state)text=state.text;if('playing'in state)playing=state.playing;sample();},events:()=>sent.filter(x=>x.channel==='alerts-text')};
+  const vm = require('node:vm'),
+    fs = require('node:fs'),
+    path = require('node:path');
+  function fixture(seconds) {
+    let clock = 100000,
+      configHandler,
+      sample,
+      shown = false,
+      text = '',
+      playing = false;
+    const sent = [];
+    const view = {
+      frameElement: null,
+      getComputedStyle: (e) => ({
+        display: 'block',
+        visibility: 'visible',
+        opacity: e === parent && !shown ? '0' : '1',
+      }),
+    };
+    const document = {
+      defaultView: view,
+      documentElement: {},
+      querySelector() {
+        return null;
+      },
+      querySelectorAll(q) {
+        return q === 'audio,video'
+          ? [media]
+          : q === '#alert-text'
+            ? [node]
+            : [];
+      },
+    };
+    const parent = {
+      ownerDocument: document,
+      parentElement: null,
+      getRootNode: () => document,
+    };
+    const node = {
+      ownerDocument: document,
+      parentElement: parent,
+      getClientRects: () => [{}],
+      get innerText() {
+        return text;
+      },
+      contains: () => false,
+    };
+    const media = {
+      get paused() {
+        return !playing;
+      },
+      ended: false,
+      readyState: 4,
+    };
+    vm.runInNewContext(
+      fs.readFileSync(path.join(__dirname, 'alerts-preload.js'), 'utf8'),
+      {
+        require: () => ({
+          ipcRenderer: {
+            on: (_, f) => (configHandler = f),
+            send: (channel, data) => sent.push({ channel, data, at: clock }),
+          },
+        }),
+        document,
+        Date: { now: () => clock },
+        MutationObserver: class {
+          observe() {}
+          disconnect() {}
+        },
+        clearInterval() {},
+        clearTimeout() {},
+        setTimeout() {
+          return 1;
+        },
+        setInterval: (f) => {
+          sample = f;
+          return 1;
+        },
+      },
+    );
+    configHandler(null, { selector: '#alert-text', durationSeconds: seconds });
+    return {
+      tick(ms, state = {}) {
+        clock += ms;
+        if ('shown' in state) shown = state.shown;
+        if ('text' in state) text = state.text;
+        if ('playing' in state) playing = state.playing;
+        sample();
+      },
+      events: () => sent.filter((x) => x.channel === 'alerts-text'),
+    };
   }
-  for(const duration of [5,10]){
-    const f=fixture(duration);f.tick(0,{shown:true,text:'Pessoa seguiu o canal',playing:true});
-    f.tick(duration*1000-1);assert.equal(f.events().length,0);
-    f.tick(1);assert.equal(f.events().length,0,'áudio em andamento bloqueia agradecimento');
-    f.tick(500,{playing:false});assert.equal(f.events().length,1);
-    assert.equal(f.events()[0].data.text,'Pessoa seguiu o canal');f.tick(1000);assert.equal(f.events().length,1);
+  for (const duration of [5, 10]) {
+    const f = fixture(duration);
+    f.tick(0, { shown: true, text: 'Pessoa seguiu o canal', playing: true });
+    f.tick(duration * 1000 - 1);
+    assert.equal(f.events().length, 0);
+    f.tick(1);
+    assert.equal(
+      f.events().length,
+      0,
+      'áudio em andamento bloqueia agradecimento',
+    );
+    f.tick(500, { playing: false });
+    assert.equal(f.events().length, 1);
+    assert.equal(f.events()[0].data.text, 'Pessoa seguiu o canal');
+    f.tick(1000);
+    assert.equal(f.events().length, 1);
   }
-  const f=fixture(0);f.tick(0,{shown:true,text:'Outra pessoa enviou uma mensagem'});f.tick(11000);assert.equal(f.events().length,0);
-  f.tick(1,{shown:false,playing:true});f.tick(1000);assert.equal(f.events().length,0);
-  f.tick(1,{playing:false});f.tick(400);assert.equal(f.events().length,1);
-  const changes=fixture(5);changes.tick(0,{shown:true,text:'Primeira pessoa seguiu'});
-  changes.tick(1000,{text:'Segunda pessoa seguiu'});assert.equal(changes.events().length,0);
-  changes.tick(4000);assert.equal(changes.events().length,1);
-  changes.tick(1000);assert.equal(changes.events().length,2);
+  const f = fixture(0);
+  f.tick(0, { shown: true, text: 'Outra pessoa enviou uma mensagem' });
+  f.tick(11000);
+  assert.equal(f.events().length, 0);
+  f.tick(1, { shown: false, playing: true });
+  f.tick(1000);
+  assert.equal(f.events().length, 0);
+  f.tick(1, { playing: false });
+  f.tick(400);
+  assert.equal(f.events().length, 1);
+  const changes = fixture(5);
+  changes.tick(0, { shown: true, text: 'Primeira pessoa seguiu' });
+  changes.tick(1000, { text: 'Segunda pessoa seguiu' });
+  assert.equal(changes.events().length, 0);
+  changes.tick(4000);
+  assert.equal(changes.events().length, 1);
+  changes.tick(1000);
+  assert.equal(changes.events().length, 2);
 });
 
 test('idiomas têm catálogos completos e preservam variáveis e dados do usuário', () => {
- const i18n=require('./i18n'),voices=require('./voices.json');
- const {voiceForLanguage}=require('./voice-catalog');
- assert.equal(i18n.languages.length,14);assert.equal(voices.length,322);
- const keys=Object.keys(i18n.catalogs['pt-BR']);
- for(const language of i18n.languages){
-  assert.equal(Object.keys(i18n.catalogs[language.code]).length,keys.length);
-  for(const key of keys){const translated=i18n.catalogs[language.code][key];assert.ok(translated,key+' missing in '+language.code);assert.deepEqual((translated.match(/\{\d+\}/g)||[]).sort(),(key.match(/\{\d+\}/g)||[]).sort());}
-  for(const gender of ['Female','Male']){
-   const previous=gender==='Male'?'pt-BR-AntonioNeural':'pt-BR-FranciscaNeural';
-   const chosen=voices.find(v=>v.id===voiceForLanguage(language.code,previous));
-   assert.equal(chosen.gender,gender);assert.equal(chosen.locale.split('-')[0],language.code.split('-')[0]);
+  const i18n = require('./i18n'),
+    voices = require('./voices.json');
+  const { voiceForLanguage } = require('./voice-catalog');
+  assert.equal(i18n.languages.length, 14);
+  assert.equal(voices.length, 322);
+  const keys = Object.keys(i18n.catalogs['pt-BR']);
+  for (const language of i18n.languages) {
+    assert.equal(Object.keys(i18n.catalogs[language.code]).length, keys.length);
+    for (const key of keys) {
+      const translated = i18n.catalogs[language.code][key];
+      assert.ok(translated, key + ' missing in ' + language.code);
+      assert.deepEqual(
+        (translated.match(/\{\d+\}/g) || []).sort(),
+        (key.match(/\{\d+\}/g) || []).sort(),
+      );
+    }
+    for (const gender of ['Female', 'Male']) {
+      const previous =
+        gender === 'Male' ? 'pt-BR-AntonioNeural' : 'pt-BR-FranciscaNeural';
+      const chosen = voices.find(
+        (v) => v.id === voiceForLanguage(language.code, previous),
+      );
+      assert.equal(chosen.gender, gender);
+      assert.equal(chosen.locale.split('-')[0], language.code.split('-')[0]);
+    }
   }
- }
- assert.equal(i18n.translate('Salvar e conectar','en'),'Save and connect');
- assert.equal(i18n.translate('Nome privado pediu Nome da música.','en'),'Nome privado requested Nome da música.');
- assert.equal(i18n.translate('https://example.com/private?token=abc','ja'),'https://example.com/private?token=abc');
- assert.equal(i18n.normalize('../../anything'),'pt-BR');
+  assert.equal(i18n.translate('Salvar e conectar', 'en'), 'Save and connect');
+  assert.equal(
+    i18n.translate('Nome privado pediu Nome da música.', 'en'),
+    'Nome privado requested Nome da música.',
+  );
+  assert.equal(
+    i18n.translate('https://example.com/private?token=abc', 'ja'),
+    'https://example.com/private?token=abc',
+  );
+  assert.equal(i18n.normalize('../../anything'), 'pt-BR');
+});
+
+test('Spotify desativado limpa o HUD, persiste a escolha e ignora uma consulta em andamento', async () => {
+  const fs = require('node:fs'),
+    os = require('node:os'),
+    path = require('node:path');
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'kaia-spotify-toggle-'));
+  const storage = {
+    isEncryptionAvailable: () => true,
+    encryptString: (s) => Buffer.from(s),
+    decryptString: (b) => b.toString(),
+  };
+  let release,
+    calls = 0;
+  const spotify = new Spotify({
+    directory: folder,
+    storage,
+    open: async () => {},
+    fetcher: async () => {
+      calls++;
+      return await new Promise((resolve) => {
+        release = () =>
+          resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              is_playing: true,
+              item: { name: 'Faixa pendente' },
+            }),
+          });
+      });
+    },
+  });
+  try {
+    assert.equal(spotify.info().enabled, false);
+    spotify.auth = {
+      clientId: 'a'.repeat(32),
+      refresh_token: 'fixture',
+      access_token: 'fixture',
+      expires: Date.now() + 60000,
+    };
+    spotify.start();
+    await spotify.poll();
+    assert.equal(calls, 0);
+    spotify.setEnabled(true);
+    assert.equal(calls, 1);
+    spotify.setEnabled(false);
+    release();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(spotify.info().current, {});
+    const hud = JSON.parse(
+      fs.readFileSync(path.join(folder, 'avatar/spotify.json')),
+    );
+    assert.equal(hud.enabled, false);
+    assert.equal(hud.tocando, false);
+    assert.equal(hud.titulo, undefined);
+    const restored = new Spotify({
+      directory: folder,
+      storage,
+      open: async () => {},
+    });
+    assert.equal(restored.info().enabled, false);
+    restored.close();
+    const view = require('./vendor/sr/avatar/sr');
+    assert.equal(
+      view.escolherEstado(null, { ...hud, titulo: 'antiga', quando: 100 }, 101)
+        .fonte_atual,
+      'sr',
+    );
+    assert.equal(
+      view.escolherEstado(
+        { titulo: 'Pedido', fonte_atual: 'sr', quando: 100 },
+        hud,
+        101,
+      ).titulo,
+      'Pedido',
+    );
+  } finally {
+    spotify.close();
+    fs.rmSync(folder, { recursive: true, force: true });
+  }
 });

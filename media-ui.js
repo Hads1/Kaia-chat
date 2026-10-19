@@ -315,6 +315,7 @@
     el('sr-stats').textContent = s.stats ? JSON.stringify(s.stats) : '';
   }
   function spotifyState(s) {
+    el('spotify-enabled').checked = s.enabled === true;
     const current = s.current || {};
     el('spotify-now').textContent = current.titulo
       ? `${current.titulo} · ${current.artista || ''} · ${current.estado || ''}`
@@ -326,6 +327,19 @@
   window.kaia.on('sr-state', srState);
   window.kaia.on('sr-order-manual', () => (el('sr-shuffle').checked = false));
   window.kaia.on('spotify-state', spotifyState);
+  el('spotify-enabled').onchange = async () => {
+    try {
+      spotifyState(
+        await window.kaia.spotifyAction(
+          'enabled',
+          el('spotify-enabled').checked,
+        ),
+      );
+    } catch (error) {
+      el('spotify-status').textContent = error.message;
+      spotifyState(await window.kaia.spotifyAction('info'));
+    }
+  };
   window.kaia.on('media-status', (s) => {
     const target = el(s.kind + '-status');
     if (target) target.textContent = s.text;

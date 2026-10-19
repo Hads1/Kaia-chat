@@ -385,6 +385,12 @@
             Excluir toda a playlist aguardando
           </button>
           <ol id="sr-background-queue"></ol>
+          <button data-sr="save_playlist">Salvar playlist</button>
+          <button data-sr="restore_playlist">Recuperar última playlist</button>
+          <p>
+            A recuperação substitui a playlist aguardando e mantém a música
+            atual e os pedidos do chat.
+          </p>
           <p>
             Use ↑/↓ ou informe a posição para organizar manualmente. A ordem de
             cada lista é independente; ordenar desativa o aleatório.
@@ -425,6 +431,10 @@
             >
           </summary>
           <div class="type-content">
+            <label
+              ><input id="spotify-enabled" type="checkbox" /> Exibir Spotify no
+              player e no widget</label
+            >
             <label
               >Client ID<input
                 id="spotify-client-id"

@@ -276,6 +276,11 @@ header {
   -webkit-app-region: drag;
 }
 .brand {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
   font-size: 15px;
   font-weight: 800;
   letter-spacing: 2px;
@@ -987,9 +992,9 @@ body.widget-tab #chat-last-alert {
 }
 /* Interface language also selects the corresponding reader voice. */
 #language-toggle {
-  position: absolute;
-  inset-inline-end: 145px;
-  top: 9px;
+  position: static;
+  margin-left: auto;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 5px;

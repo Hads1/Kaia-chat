@@ -25,6 +25,7 @@ fs.renameSync(
 const appDir = path.join(stage, 'resources/app');
 fs.mkdirSync(path.join(appDir, 'node_modules'), { recursive: true });
 const source = [
+  'chat-window.js',
   'i18n.js',
   'i18n-data.js',
   'i18n-ui.js',
