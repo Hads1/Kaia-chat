@@ -25,6 +25,12 @@ fs.renameSync(
 const appDir = path.join(stage, 'resources/app');
 fs.mkdirSync(path.join(appDir, 'node_modules'), { recursive: true });
 const source = [
+  'i18n.js',
+  'i18n-data.js',
+  'i18n-ui.js',
+  'voices.json',
+  'voices-ui.js',
+  'voice-catalog.js',
   'sr-shortcuts.js',
   'sr-settings-ui.js',
   'alerts.js',

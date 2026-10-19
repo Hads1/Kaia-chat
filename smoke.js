@@ -342,7 +342,7 @@ module.exports = async (win, app, emit, config, transcript) => {
         const panel=document.getElementById('widget-panel');
         const widgetOK=panel.scrollWidth<=panel.clientWidth;
         document.getElementById('tab-chat').click();
-        return {width:innerWidth,height:innerHeight,chatOK,widgetOK};
+        return {width:innerWidth,height:innerHeight,chatOK,widgetOK,toolbarBottom:toolbar.bottom,bodyWidth:document.body.scrollWidth,buttonBounds:buttons.map(b=>({left:b.left,right:b.right,bottom:b.bottom}))};
       })()`);
       windowTests.sizes.push(layout);
     }
@@ -574,8 +574,41 @@ module.exports = async (win, app, emit, config, transcript) => {
     v10.lastAlert = await win.webContents.executeJavaScript(
       `document.getElementById('last-alert').textContent.includes('seguiu')&&document.getElementById('chat-last-alert').textContent.includes('seguiu')`,
     );
+    const localeTests = await win.webContents.executeJavaScript(`(async()=>{
+      const preserved=document.createElement('div');preserved.className='message';preserved.textContent='Salvar e conectar';document.getElementById('feed').append(preserved);
+      const rows=[];const voices=await window.kaia.voices();const before=document.getElementById('twitch-channel').value;
+      for(const language of window.KaiaI18n.languages){
+        document.querySelector('#language-toggle').click();
+        Array.from(document.querySelectorAll('#language-picker button')).find(b=>b.lang===language.code).click();
+        const deadline=Date.now()+5000;
+        while((document.documentElement.lang!==language.code||document.getElementById('reader-voice-language').value!==language.code)&&Date.now()<deadline)await new Promise(r=>setTimeout(r,30));
+        const state=await window.kaia.load(),voice=voices.find(v=>v.id===state.reader.voice);
+        const actual=document.getElementById('reader-voice').value;
+        rows.push({language:language.code,translated:document.getElementById('tab-reader').textContent===window.KaiaI18n.translate('Leitor',language.code),direction:document.documentElement.dir===language.dir,voice:!!voice&&voice.locale.split('-')[0]===language.code.split('-')[0]&&actual===voice.id,preserved:preserved.textContent==='Salvar e conectar'&&document.getElementById('twitch-channel').value===before,flag:document.querySelector('#language-toggle img').complete});
+      }
+      preserved.remove();return {rows,voiceCount:voices.length,passed:rows.every(r=>r.translated&&r.direction&&r.voice&&r.preserved&&r.flag)};
+    })()`);
+    localeTests.persisted =
+      JSON.parse(
+        fs.readFileSync(
+          path.join(app.getPath('userData'), 'settings.json'),
+          'utf8',
+        ),
+      ).language === 'zh-CN';
+    for (const language of ['en', 'ja', 'ar']) {
+      await win.webContents.executeJavaScript(
+        `window.kaia.saveLanguage(${JSON.stringify(language)}).then(()=>document.getElementById('tab-reader').click())`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      fs.writeFileSync(
+        path.join(__dirname, 'preview-language-' + language + '.png'),
+        (await win.webContents.capturePage()).toPNG(),
+      );
+    }
     const result = {
       passed:
+        localeTests.passed &&
+        localeTests.persisted &&
         Object.values(v10).every(Boolean) &&
         passed &&
         overlayPassed &&
@@ -609,6 +642,7 @@ module.exports = async (win, app, emit, config, transcript) => {
       mediaTests,
       playerTests,
       v10,
+      localeTests,
     };
     fs.writeFileSync(
       path.join(__dirname, 'smoke-result.json'),

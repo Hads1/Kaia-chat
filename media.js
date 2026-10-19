@@ -17,6 +17,7 @@ const { createSRRoutes } = require('./sr-assets');
 const { cleanupMedia } = require('./media-cleanup');
 const { SRShortcuts } = require('./sr-shortcuts');
 const { AlertSources } = require('./alerts');
+const locale = require('./i18n');
 function installMedia({
   win,
   directory,
@@ -27,6 +28,7 @@ function installMedia({
   smoke,
 }) {
   const settings = getSettings();
+  const t = (text) => locale.translate(text, getSettings().language);
   settings.reader = normalizeReader(settings.reader);
   settings.sr = {
     enabled: false,
@@ -57,9 +59,11 @@ function installMedia({
           'speak',
           {
             message,
-            config: message.announcement
-              ? { ...config, sayName: false }
-              : config,
+            config: {
+              ...config,
+              sayName: message.announcement ? false : config.sayName,
+              sayTemplate: t('{0} diz: '),
+            },
           },
           180000,
         );
@@ -84,6 +88,7 @@ function installMedia({
   reader.configure(settings.reader);
   let lastAlert = null;
   function announce(text, user = 'Kaia') {
+    text = t(text);
     if (smoke) return;
     if (!settings.reader.output) {
       notify('reader', 'Escolha a saída do leitor para ouvir avisos privados.');
@@ -191,7 +196,11 @@ function installMedia({
     },
   });
   if (!smoke) spotify.start();
-  widgetServer.srRoute = createSRRoutes({ directory, backend });
+  widgetServer.srRoute = createSRRoutes({
+    directory,
+    backend,
+    getLanguage: () => getSettings().language,
+  });
   const youtube = new YouTubeSession(directory);
   let cookieHash = '',
     pollBusy = false,
@@ -566,6 +575,7 @@ function installMedia({
       if (type === 'settings' && data.clear) reader.clear();
     },
     prune: () => reader.prune(),
+    languageChanged: () => reader.configure(settings.reader),
     async close() {
       closing = true;
       clearInterval(poll);

@@ -1,6 +1,6 @@
 # Kaia Chat
 
-**Versão 0.10.3:** atalhos globais editáveis do SR, pedidos e playlist separados, avisos privados de músicas e alertas, sincronização após o fim do widget/áudio e duração configurável por fonte. Veja [Leitor e SR](docs/LEITOR-E-SR.md) e o [tutorial Spotify](docs/SPOTIFY.md).
+**Versão 0.11.0 — Multilíngue:** mesmas telas e funções em 14 idiomas, seletor com bandeiras e todas as 322 vozes do catálogo Microsoft Edge TTS consultado em 19/10/2026. Ao trocar a bandeira, a voz muda para o mesmo idioma, preservando o gênero quando disponível. Veja [Idiomas e vozes](docs/IDIOMAS.md). Veja [Leitor e SR](docs/LEITOR-E-SR.md) e o [tutorial Spotify](docs/SPOTIFY.md).
 
 Overlay de leitura para **Twitch, Kick, Starvios e uma plataforma personalizada por API JSON**, feito para Windows. Configure cada canal e seu áudio independentemente e reúna as mensagens em um painel transparente sobre o jogo.
 
@@ -128,3 +128,7 @@ Ainda não estão implementados. A viabilidade e os requisitos de autorização 
 ## Licença
 
 GPLv3; veja [LICENSE](LICENSE) e [CREDITOS.md](CREDITOS.md). Os áudios reaproveitados mantêm seus créditos. Electron, Chromium, ws e emotes têm seus respectivos autores e licenças.
+
+## Idiomas e vozes
+
+A versão 0.11.0 acrescenta um seletor com bandeiras para 14 idiomas. Trocar a bandeira também seleciona uma voz no mesmo idioma, mantendo o gênero quando possível. A aba Leitor disponibiliza o catálogo completo de 322 vozes Edge TTS consultado em 19/10/2026, com filtros de idioma e gênero. Veja [Idiomas e vozes](docs/IDIOMAS.md). A interface funciona offline; a geração da fala exige internet.

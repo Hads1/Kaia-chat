@@ -985,3 +985,97 @@ body.feature-tab #chat-last-alert,
 body.widget-tab #chat-last-alert {
   display: none;
 }
+/* Interface language also selects the corresponding reader voice. */
+#language-toggle {
+  position: absolute;
+  inset-inline-end: 145px;
+  top: 9px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 130px;
+  padding: 4px 7px;
+  font-size: 11px;
+  -webkit-app-region: no-drag;
+}
+#language-toggle img,
+#language-picker img {
+  width: 24px;
+  height: 16px;
+  object-fit: cover;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+#language-picker {
+  position: fixed;
+  inset-inline-end: 10px;
+  top: 48px;
+  width: min(340px, calc(100vw - 20px));
+  max-height: calc(100vh - 65px);
+  overflow: auto;
+  z-index: 10000;
+  padding: 9px;
+  border: 1px solid #645383;
+  border-radius: 10px;
+  background: #121622;
+  box-shadow: 0 8px 24px #0009;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+#language-picker[hidden] {
+  display: none;
+}
+#language-picker button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  text-align: start;
+  min-width: 0;
+  padding: 9px;
+}
+#language-status:empty {
+  display: none;
+}
+body.overlay #language-picker,
+body.overlay #language-status {
+  display: none;
+}
+html[dir='rtl'] input[type='url'],
+html[dir='rtl'] input[type='password'],
+html[dir='rtl'] .channel,
+html[dir='rtl'] code {
+  direction: ltr;
+  text-align: start;
+}
+@media (max-width: 370px) {
+  #language-toggle {
+    inset-inline-end: 140px;
+    max-width: 48px;
+  }
+  #language-toggle span {
+    display: none;
+  }
+}
+html[dir='rtl'] header {
+  direction: ltr;
+}
+html[dir='rtl'] #language-toggle {
+  inset-inline-end: auto;
+  right: 145px;
+}
+@media (max-height: 400px) {
+  .toolbar {
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+  .statuses {
+    max-height: 56px;
+    overflow-y: auto;
+  }
+}
+
+#language-picker button[aria-pressed='true'] {
+  background: #6545a3;
+  border-color: #bda7f7;
+}

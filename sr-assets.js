@@ -1,9 +1,22 @@
 const fs = require('node:fs');
 const path = require('node:path');
-function createSRRoutes({ directory, backend }) {
+function createSRRoutes({ directory, backend, getLanguage = () => 'pt-BR' }) {
   const assets = path.join(__dirname, 'vendor', 'sr', 'avatar');
   const files = new Set(fs.readdirSync(assets));
   return async (req, res, file) => {
+    if (file === 'api/ui-language' && req.method === 'GET') {
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ language: getLanguage() }));
+      return;
+    }
+    if (
+      ['i18n.js', 'i18n-data.js', 'i18n-ui.js'].includes(file) &&
+      req.method === 'GET'
+    ) {
+      res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+      res.end(fs.readFileSync(path.join(__dirname, file)));
+      return;
+    }
     if (file === 'api/sr-layout' && req.method === 'POST') {
       const expected = 'http://' + req.headers.host;
       if (

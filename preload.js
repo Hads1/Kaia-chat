@@ -1,6 +1,8 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('kaia', {
   load: () => ipcRenderer.invoke('load'),
+  saveLanguage: (language) => ipcRenderer.invoke('save-language', language),
+  voices: () => ipcRenderer.invoke('voices'),
   diagnoseMedia: () => ipcRenderer.invoke('media-diagnose'),
   saveReader: (value) => ipcRenderer.invoke('save-reader', value),
   readerAction: (action) => ipcRenderer.invoke('reader-action', action),
@@ -34,6 +36,7 @@ contextBridge.exposeInMainWorld('kaia', {
     if (
       [
         'message',
+        'language',
         'media-status',
         'spotify-state',
         'sr-state',

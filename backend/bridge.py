@@ -57,7 +57,7 @@ def command(action,args):
     if action=='speak':
         import edge_tts,audio_out
         VOICE_STOP.clear();c=args['config'];m=args['message']
-        text=(m['user']+' diz: ' if c['sayName'] else '')+m['text'][:(1000 if m.get('announcement') else int(c.get('maxChars',300)))]
+        text=(c.get('sayTemplate','{0} diz: ').replace('{0}',m['user']).rstrip()+' ' if c['sayName'] else '')+m['text'][:(1000 if m.get('announcement') else int(c.get('maxChars',300)))]
         file=DATA/'tmp_sr'/('reader-'+uuid.uuid4().hex+'.mp3')
         budget=15 if m.get('announcement') else 8
         deadline=min(time.time()+budget,float(m.get('expiresAt') or (time.time()+8000)*1000)/1000)

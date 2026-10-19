@@ -49,8 +49,16 @@
     select.replaceChildren(new Option(empty, ''));
     for (const value of [...new Set(values)].filter(Boolean))
       select.add(new Option(value, value));
-    if (chosen && !values.includes(chosen))
-      select.add(new Option(chosen + ' · indisponível', chosen));
+    if (chosen && !values.includes(chosen)) {
+      const option = new Option(
+        chosen +
+          (window.KaiaLocale?.translate(' · indisponível') ||
+            ' · indisponível'),
+        chosen,
+      );
+      option.dataset.i18nUnavailable = chosen;
+      select.add(option);
+    }
     select.value = chosen;
   }
   async function diagnose() {
@@ -208,6 +216,10 @@
       ]),
     );
   function srState(s) {
+    el('sr-now').toggleAttribute(
+      'data-i18n-ignore',
+      !!(s.titulo || s.fila?.[0]?.titulo),
+    );
     window.KaiaMiniPlayer?.update(s);
     el('sr-now').textContent =
       (s.titulo
@@ -231,6 +243,7 @@
           text = document.createElement('span'),
           remove = document.createElement('button');
         text.textContent = `${item.user || ''}: ${item.titulo || item.q || ''}${item.status ? ' · ' + item.status : ''}`;
+        text.dataset.i18nIgnore = '';
         remove.textContent = 'Remover';
         remove.onclick = () =>
           task('sr', () => window.kaia.srAction(action, [index]));
@@ -251,6 +264,7 @@
         const row = document.createElement('li'),
           text = document.createElement('span');
         text.textContent = `${index + 1}. ${item.user || ''}: ${item.titulo || ''} · ${item.status || ''}`;
+        text.dataset.i18nIgnore = '';
         row.append(text);
         const button = (label, op, target) => {
           const b = document.createElement('button');
@@ -307,6 +321,7 @@
       : s.connected
         ? 'Spotify autorizado; aguardando música.'
         : 'Spotify ainda não autorizado.';
+    el('spotify-now').toggleAttribute('data-i18n-ignore', !!current.titulo);
   }
   window.kaia.on('sr-state', srState);
   window.kaia.on('sr-order-manual', () => (el('sr-shuffle').checked = false));

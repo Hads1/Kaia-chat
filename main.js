@@ -22,6 +22,9 @@ const { Transcript } = require('./transcript');
 const { WidgetServer, normalizeWidget } = require('./widget-server');
 const widgetServer = new WidgetServer();
 const { installMedia } = require('./media');
+const locale = require('./i18n');
+const { voiceForLanguage } = require('./voice-catalog');
+const t = (text) => locale.translate(text, settings.language);
 let media;
 let displayMode;
 let widgetWindow,
@@ -60,6 +63,7 @@ let win,
   locked = false,
   overlay = false;
 let settings = {
+  language: 'pt-BR',
   twitch: { channel: '', enabled: true, sound: 'Alert 1.wav', volume: 0.5 },
   kick: { channel: '', enabled: true, sound: 'Alert 2.wav', volume: 0.5 },
   starvios: { channel: '', enabled: false, sound: 'Alert 3.wav', volume: 0.5 },
@@ -97,15 +101,15 @@ const transcript = new Transcript((state) => {
 });
 async function chooseTranscript() {
   const picked = await dialog.showSaveDialog(win, {
-    title: 'Escolha onde salvar todo o chat em TXT',
+    title: t('Escolha onde salvar todo o chat em TXT'),
     defaultPath:
       settings.transcriptPath ||
       path.join(
         app.getPath('documents'),
         'KaiaChat-' + new Date().toISOString().replace(/[:.]/g, '-') + '.txt',
       ),
-    filters: [{ name: 'Transcrição do chat', extensions: ['txt'] }],
-    buttonLabel: 'Usar este TXT',
+    filters: [{ name: t('Transcrição do chat'), extensions: ['txt'] }],
+    buttonLabel: t('Usar este TXT'),
   });
   if (picked.canceled || !picked.filePath) return null;
   const file =
@@ -180,6 +184,7 @@ app.whenReady().then(async () => {
     } catch {}
   }
   settings.widget = normalizeWidget(settings.widget);
+  settings.language = locale.normalize(settings.language);
   settings.timing = normalizeTiming(settings.timing);
   settings.appearance = normalizeAppearance(settings.appearance);
   await widgetServer.start(smoke ? 0 : 19347, settings.widgetToken);
@@ -265,6 +270,18 @@ app.whenReady().then(async () => {
   win.webContents.on('will-navigate', (e) => e.preventDefault());
   chats = new Chats(emit);
   ipcMain.handle('load', () => decorated());
+  ipcMain.handle('voices', () => require('./voices.json'));
+  ipcMain.handle('save-language', (_, language) => {
+    if (!locale.languages.some((item) => item.code === language))
+      throw Error('Idioma inválido.');
+    settings.language = language;
+    settings.reader.voice = voiceForLanguage(language, settings.reader.voice);
+    media?.languageChanged();
+    fs.writeFileSync(config(), JSON.stringify(settings, null, 2));
+    updateTray();
+    emit('language', language);
+    return language;
+  });
   ipcMain.handle('save-widget', (_, value) => {
     settings.widget = normalizeWidget(value);
     fs.writeFileSync(config(), JSON.stringify(settings, null, 2));
@@ -362,7 +379,7 @@ app.whenReady().then(async () => {
     if (!['kick', 'twitch', 'starvios', 'custom'].includes(p)) return;
     const r = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
-      filters: [{ name: 'Áudio', extensions: ['wav', 'mp3', 'ogg', 'm4a'] }],
+      filters: [{ name: t('Áudio'), extensions: ['wav', 'mp3', 'ogg', 'm4a'] }],
     });
     if (!r.canceled)
       return { path: r.filePaths[0], url: pathToFileURL(r.filePaths[0]).href };
@@ -420,16 +437,19 @@ app.whenReady().then(async () => {
   globalShortcut.register('CommandOrControl+Shift+F10', lock);
   globalShortcut.register('CommandOrControl+Shift+F9', restore);
   tray = new Tray(path.join(assets, 'icon.png'));
-  tray.setToolTip('Kaia Chat — Ctrl+Shift+F9 para configurar');
-  tray.setContextMenu(
-    Menu.buildFromTemplate([
-      {
-        label: 'Abrir configurações / liberar cliques',
-        click: restore,
-      },
-      { label: 'Sair', click: () => app.quit() },
-    ]),
-  );
+  function updateTray() {
+    tray.setToolTip(t('Kaia Chat — Ctrl+Shift+F9 para configurar'));
+    tray.setContextMenu(
+      Menu.buildFromTemplate([
+        {
+          label: t('Abrir configurações / liberar cliques'),
+          click: restore,
+        },
+        { label: t('Sair'), click: () => app.quit() },
+      ]),
+    );
+  }
+  updateTray();
   await win.loadFile('index.html');
   if (smoke) {
     settings.transcriptPath = path.join(

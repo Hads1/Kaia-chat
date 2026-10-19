@@ -1073,3 +1073,23 @@ test('alerta aguarda duração configurada, fim do áudio e desaparecimento auto
   changes.tick(4000);assert.equal(changes.events().length,1);
   changes.tick(1000);assert.equal(changes.events().length,2);
 });
+
+test('idiomas têm catálogos completos e preservam variáveis e dados do usuário', () => {
+ const i18n=require('./i18n'),voices=require('./voices.json');
+ const {voiceForLanguage}=require('./voice-catalog');
+ assert.equal(i18n.languages.length,14);assert.equal(voices.length,322);
+ const keys=Object.keys(i18n.catalogs['pt-BR']);
+ for(const language of i18n.languages){
+  assert.equal(Object.keys(i18n.catalogs[language.code]).length,keys.length);
+  for(const key of keys){const translated=i18n.catalogs[language.code][key];assert.ok(translated,key+' missing in '+language.code);assert.deepEqual((translated.match(/\{\d+\}/g)||[]).sort(),(key.match(/\{\d+\}/g)||[]).sort());}
+  for(const gender of ['Female','Male']){
+   const previous=gender==='Male'?'pt-BR-AntonioNeural':'pt-BR-FranciscaNeural';
+   const chosen=voices.find(v=>v.id===voiceForLanguage(language.code,previous));
+   assert.equal(chosen.gender,gender);assert.equal(chosen.locale.split('-')[0],language.code.split('-')[0]);
+  }
+ }
+ assert.equal(i18n.translate('Salvar e conectar','en'),'Save and connect');
+ assert.equal(i18n.translate('Nome privado pediu Nome da música.','en'),'Nome privado requested Nome da música.');
+ assert.equal(i18n.translate('https://example.com/private?token=abc','ja'),'https://example.com/private?token=abc');
+ assert.equal(i18n.normalize('../../anything'),'pt-BR');
+});

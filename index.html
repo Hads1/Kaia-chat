@@ -13,6 +13,15 @@
   <body class="native-controls">
     <header>
       <span class="brand">✦ KAIA <b>CHAT</b></span
+      ><button
+        id="language-toggle"
+        type="button"
+        aria-label="Idioma"
+        aria-haspopup="dialog"
+        aria-expanded="false"
+        data-i18n-ignore
+      >
+        Português</button
       ><span class="read">SOMENTE LEITURA</span
       ><button
         id="fullscreen"
@@ -23,6 +32,8 @@
       ><button id="minimize" title="Minimizar">−</button
       ><button id="close" title="Fechar">×</button>
     </header>
+    <div id="language-picker" role="dialog" aria-label="Idioma" hidden></div>
+    <p id="language-status" role="status"></p>
     <div
       class="window-drag-strip"
       title="Arraste esta faixa para mover ou encaixar a janela"
@@ -136,7 +147,17 @@
             </select></label
           >
           <label
-            >Voz<select id="reader-voice">
+            >Idioma da voz<select id="reader-voice-language"></select
+          ></label>
+          <label
+            >Gênero da voz<select id="reader-voice-gender">
+              <option value="all">Todas as vozes</option>
+              <option value="Female">Feminina</option>
+              <option value="Male">Masculina</option>
+            </select></label
+          >
+          <label
+            >Voz<select id="reader-voice" data-i18n-ignore>
               <option value="pt-BR-FranciscaNeural">
                 Francisca · português BR
               </option>
@@ -855,6 +876,10 @@
         Ctrl+Shift+F9: configurar · Ctrl+Shift+F10: liberar/bloquear cliques
       </footer>
     </main>
+    <script src="i18n-data.js"></script>
+    <script src="i18n.js"></script>
+    <script src="i18n-ui.js"></script>
+    <script src="voices-ui.js"></script>
     <script src="blocking.js"></script>
     <script src="timing.js"></script>
     <script src="blocked-ui.js"></script>
