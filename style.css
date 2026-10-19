@@ -257,6 +257,8 @@ body.settings-collapsed #feed {
   box-sizing: border-box;
 }
 body {
+  display: flex;
+  flex-direction: column;
   margin: 0;
   background: rgba(13, 16, 25, var(--background));
   border: 1px solid #ffffff20;
@@ -309,7 +311,9 @@ header button {
   font-size: 22px;
 }
 main {
-  height: calc(100vh - 48px);
+  height: auto;
+  min-height: 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
@@ -889,4 +893,95 @@ body.overlay {
     padding-top: 5px;
     padding-bottom: 5px;
   }
+}
+.window-drag-strip {
+  -webkit-app-region: drag;
+  flex: 0 0 20px;
+  height: 20px;
+  width: 100%;
+  text-align: center;
+  font-size: 10px;
+  line-height: 20px;
+  color: #aab6d0;
+  background: #192031;
+  user-select: none;
+  cursor: grab;
+}
+.overlay .window-drag-strip {
+  display: none !important;
+}
+#tabs {
+  overflow-x: auto;
+  min-height: 40px;
+}
+#tabs button {
+  flex-shrink: 0;
+}
+.queue-position {
+  max-width: 65px !important;
+}
+#sr-queue li,
+#sr-background-queue li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  margin: 8px 0;
+}
+#sr-queue li span,
+#sr-background-queue li span {
+  flex: 1 1 100%;
+  overflow-wrap: anywhere;
+}
+#alert-sources fieldset {
+  border: 1px solid #ffffff30;
+  border-radius: 8px;
+  margin: 12px 0;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+@media (max-width: 550px) {
+  header .read {
+    display: none;
+  }
+  header .brand {
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+  .feature-panel {
+    padding: 10px;
+  }
+}
+@media (max-height: 400px) {
+  .feature-panel {
+    padding: 8px;
+  }
+  .window-drag-strip {
+    flex-basis: 16px;
+    height: 16px;
+    line-height: 16px;
+  }
+}
+@media (max-height: 500px) {
+  main {
+    overflow-y: auto;
+  }
+  #setup {
+    max-height: 35%;
+    flex-shrink: 0;
+  }
+}
+#chat-last-alert {
+  flex-shrink: 0;
+  font-size: 12px;
+  margin: 4px 12px;
+  overflow-wrap: anywhere;
+  text-shadow: var(--chat-shadow, 0 1px 3px #000);
+}
+#chat-last-alert:empty,
+body.feature-tab #chat-last-alert,
+body.widget-tab #chat-last-alert {
+  display: none;
 }

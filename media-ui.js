@@ -92,7 +92,16 @@
   window.kaia.load().then((s) => {
     loaded = s;
     applyReader(s.reader);
-    for (const key of ['enabled', 'volume', 'output', 'repeat', 'shuffle']) {
+    for (const key of [
+      'enabled',
+      'volume',
+      'output',
+      'repeat',
+      'shuffle',
+      'requestLimit',
+      'playlistLimit',
+      'announceRequests',
+    ]) {
       const input = el('sr-' + key);
       if (input.type === 'checkbox') input.checked = !!s.sr[key];
       else {
@@ -156,6 +165,9 @@
         output: el('sr-output').value,
         repeat: el('sr-repeat').value,
         shuffle: el('sr-shuffle').checked,
+        requestLimit: el('sr-requestLimit').value,
+        playlistLimit: el('sr-playlistLimit').value,
+        announceRequests: el('sr-announceRequests').checked,
       });
       return (
         'SR salvo. ' +
@@ -198,7 +210,9 @@
   function srState(s) {
     window.KaiaMiniPlayer?.update(s);
     el('sr-now').textContent =
-      s.titulo ||
+      (s.titulo
+        ? s.titulo + (s.user ? ' · solicitado por ' + s.user : '')
+        : '') ||
       (s.fila?.[0]?.titulo
         ? 'Pedido: ' + s.fila[0].titulo
         : 'Nenhuma música em reprodução');
@@ -224,7 +238,65 @@
         list.append(row);
       });
     }
-    rows('sr-queue', s.fila, 'remover_fila');
+    function queueRows(id, group) {
+      const items = (s.fila || []).filter(
+        (x) => (x.fonte === 'playlist') === (group === 'playlist'),
+      );
+      const list = el(id);
+      const signature = JSON.stringify(items);
+      if (list.dataset.signature === signature) return;
+      list.dataset.signature = signature;
+      list.replaceChildren();
+      items.forEach((item, index) => {
+        const row = document.createElement('li'),
+          text = document.createElement('span');
+        text.textContent = `${index + 1}. ${item.user || ''}: ${item.titulo || ''} · ${item.status || ''}`;
+        row.append(text);
+        const button = (label, op, target) => {
+          const b = document.createElement('button');
+          b.textContent = label;
+          b.onclick = () =>
+            task('sr', () =>
+              window.kaia.srAction('edit_queue', [group, op, item.key, target]),
+            );
+          row.append(b);
+        };
+        button('↑', 'move', index - 1);
+        button('↓', 'move', index + 1);
+        button('Excluir', 'remove', 0);
+        const position = document.createElement('input');
+        position.type = 'number';
+        position.min = 1;
+        position.max = items.length;
+        position.value = index + 1;
+        position.setAttribute('aria-label', 'Posição de ' + item.titulo);
+        position.className = 'queue-position';
+        row.append(position);
+        const move = document.createElement('button');
+        move.textContent = 'Mover';
+        move.onclick = () =>
+          task('sr', () =>
+            window.kaia.srAction('edit_queue', [
+              group,
+              'move',
+              item.key,
+              Number(position.value) - 1,
+            ]),
+          );
+        row.append(move);
+        list.append(row);
+      });
+    }
+    queueRows('sr-queue', 'sr');
+    queueRows('sr-background-queue', 'playlist');
+    el('sr-request-count').textContent =
+      s.request_count ??
+      (s.fila || []).filter((x) => x.fonte !== 'playlist').length;
+    el('sr-playlist-count').textContent =
+      s.playlist_count ??
+      (s.fila || []).filter((x) => x.fonte === 'playlist').length;
+    if (s.playlist_job?.message)
+      el('sr-playlist-job').textContent = s.playlist_job.message;
     rows('sr-history', s.historico, 'apagar_historico');
     el('sr-stats').textContent = s.stats ? JSON.stringify(s.stats) : '';
   }
@@ -237,6 +309,7 @@
         : 'Spotify ainda não autorizado.';
   }
   window.kaia.on('sr-state', srState);
+  window.kaia.on('sr-order-manual', () => (el('sr-shuffle').checked = false));
   window.kaia.on('spotify-state', spotifyState);
   window.kaia.on('media-status', (s) => {
     const target = el(s.kind + '-status');

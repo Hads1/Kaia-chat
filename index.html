@@ -23,13 +23,47 @@
       ><button id="minimize" title="Minimizar">−</button
       ><button id="close" title="Fechar">×</button>
     </header>
+    <div
+      class="window-drag-strip"
+      title="Arraste esta faixa para mover ou encaixar a janela"
+    >
+      ⋮⋮ Arraste para mover a janela
+    </div>
     <main>
       <nav id="tabs" aria-label="Configurações">
         <button id="tab-chat" aria-pressed="true">Chat</button
         ><button id="tab-widget" aria-pressed="false">Widget</button>
         <button id="tab-reader" aria-pressed="false">Leitor</button>
         <button id="tab-sr" aria-pressed="false">SR / Spotify</button>
+        <button id="tab-alerts" aria-pressed="false">Alertas</button>
       </nav>
+      <section id="alerts-panel" class="feature-panel" hidden>
+        <h1>Alertas para o streamer</h1>
+        <p>
+          Adicione os URLs de widget usados no OBS. Streamlabs, StreamElements
+          ou serviço personalizado. Cada fonte tem seu próprio nome/plataforma.
+          Os widgets ficam sem som; o texto reconhecido é lido somente na saída
+          do Leitor. Ativar fontes de alerta também permite avisos com a leitura
+          normal desligada.
+        </p>
+        <p>
+          Compatível com texto HTML acessível. Conteúdo em canvas, imagem/vídeo
+          ou iframe de outro domínio pode não ser legível. Não é OCR e não
+          identifica eventos ausentes do widget. Use o botão de teste do seu
+          serviço após salvar. Não compartilhe seus URLs privados.
+        </p>
+        <div id="alert-sources"></div>
+        <button id="add-alert-source">Nova fonte de alerta</button
+        ><button id="save-alerts">Salvar e monitorar fontes</button>
+        <p id="alerts-status" role="status"></p>
+        <button id="test-alert-voice">Testar voz de um alerta</button>
+        <p class="announcement-status" role="status">
+          Os avisos usam a saída salva no Leitor.
+        </p>
+        <h2>Último alerta recebido</h2>
+        <p id="last-alert">Nenhum alerta recebido nesta sessão.</p>
+        <button id="repeat-alert">Ler último alerta novamente</button>
+      </section>
       <section id="reader-panel" class="feature-panel" hidden>
         <h1>Leitor de chat</h1>
         <p>
@@ -229,7 +263,7 @@
           ><button data-sr="stop">Parar</button
           ><button id="sr-mute" data-sr="mute_toggle" aria-pressed="false">
             Silenciar SR</button
-          ><button data-sr="limpar">Limpar fila</button
+          ><button data-sr="limpar">Parar e limpar todas as filas</button
           ><button data-sr="retry">Tentar pedido novamente</button>
           <button id="sr-test-audio">Testar som do SR</button>
         </div>
@@ -253,17 +287,87 @@
             id="sr-query"
             type="text"
             placeholder="Nome da música ou URL do YouTube" /></label
-        ><button id="sr-request">Adicionar música</button>
+        ><button id="sr-request">Adicionar pedido SR</button
+        ><button id="sr-add-background">
+          Adicionar faixa à playlist de fundo
+        </button>
         <label
           >Playlist do YouTube<input
             id="sr-playlist"
             type="text"
             placeholder="https://www.youtube.com/playlist?list=..." /></label
         ><button id="sr-playlist-add">Adicionar playlist</button>
+        <p id="sr-playlist-job" role="status"></p>
         <p id="sr-status" role="status"></p>
+        <button id="test-request-voice">Testar voz de pedido musical</button
+        ><button id="repeat-request">Ler último pedido novamente</button>
+        <p class="announcement-status" role="status">
+          Os avisos usam a saída salva no Leitor.
+        </p>
         <details open>
-          <summary>Fila de pedidos</summary>
+          <summary>Limites e avisos privados</summary>
+          <div class="type-grid">
+            <label
+              >Limite de pedidos aguardando<input
+                id="sr-requestLimit"
+                type="number"
+                min="1"
+                max="500"
+                value="80"
+            /></label>
+            <label
+              >Limite de músicas na playlist<input
+                id="sr-playlistLimit"
+                type="number"
+                min="1"
+                max="500"
+                value="60"
+            /></label>
+            <label class="check-row"
+              ><input id="sr-announceRequests" type="checkbox" checked />Ler
+              solicitante e título quando o pedido for aceito</label
+            >
+          </div>
+          <p>
+            Salve no botão Salvar SR. Pedidos são os próximos a tocar depois da
+            faixa atual, antes das músicas da playlist. Os limites valem para
+            novas entradas e não removem músicas já aceitas. Sons do chat e
+            avisos usam a saída do Leitor; música usa a saída do SR. O OBS deve
+            capturar só a saída/processo do SR para manter os avisos privados.
+          </p>
+        </details>
+        <details>
+          <summary>Atalhos globais editáveis do SR</summary>
+          <div id="sr-shortcuts" class="type-grid"></div>
+          <button id="save-sr-shortcuts">Salvar atalhos globais</button>
+          <p>
+            Funcionam com outro programa aberto e no modo jogo. Exemplos:
+            Ctrl+Alt+P ou Ctrl+Alt+F6. Deixe vazio para desativar.
+            Ctrl+Shift+F9/F10 são reservados.
+          </p>
+          <p id="sr-shortcuts-status" role="status"></p>
+        </details>
+        <details open>
+          <summary>
+            Pedidos SR · <span id="sr-request-count">0</span> aguardando
+          </summary>
+          <button id="sr-clear-requests">
+            Excluir todos os pedidos aguardando
+          </button>
           <ol id="sr-queue"></ol>
+        </details>
+        <details open>
+          <summary>
+            Playlist de fundo · <span id="sr-playlist-count">0</span> músicas
+          </summary>
+          <button id="sr-clear-playlist">
+            Excluir toda a playlist aguardando
+          </button>
+          <ol id="sr-background-queue"></ol>
+          <p>
+            Use ↑/↓ ou informe a posição para organizar manualmente. A ordem de
+            cada lista é independente; ordenar desativa o aleatório.
+          </p>
         </details>
         <details>
           <summary>Histórico e estatísticas</summary>
@@ -735,9 +839,11 @@
             aria-label="Posição da música na aba Chat"
           /><output id="chat-sr-time">0:00 / --:--</output>
         </div>
+        <p id="chat-sr-requester"></p>
         <p id="chat-sr-status" role="status">Aguardando pedido !sr</p>
         <p id="chat-reader-status" role="status">Leitor desativado</p>
       </section>
+      <p id="chat-last-alert"></p>
       <section id="feed" aria-live="polite">
         <div id="empty">
           <span>✦</span>
@@ -760,5 +866,7 @@
     <script src="display-ui.js"></script>
     <script src="media-ui.js"></script>
     <script src="player-ui.js"></script>
+    <script src="sr-settings-ui.js"></script>
+    <script src="alerts-ui.js"></script>
   </body>
 </html>

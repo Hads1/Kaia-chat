@@ -54,7 +54,15 @@ function createSRRoutes({ directory, backend }) {
       "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self'; object-src 'none'",
     );
     try {
-      res.end(fs.readFileSync(fs.existsSync(source) ? source : fallback));
+      const data = fs.readFileSync(fs.existsSync(source) ? source : fallback);
+      if (ext === '.json' && file === 'sr.json') {
+        const publicState = JSON.parse(data);
+        delete publicState.user;
+        delete publicState.notifications;
+        if (Array.isArray(publicState.fila))
+          publicState.fila = publicState.fila.map(({ user, ...item }) => item);
+        res.end(JSON.stringify(publicState));
+      } else res.end(data);
     } catch {
       res.writeHead(404);
       res.end();

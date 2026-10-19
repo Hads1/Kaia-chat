@@ -53,7 +53,7 @@ class ReaderQueue {
   fresh() {
     const before = this.queue.length;
     this.queue = this.queue.filter(
-      (m) => !this.blocked(m) && this.now() < m.expiresAt,
+      (m) => (m.announcement || !this.blocked(m)) && this.now() < m.expiresAt,
     );
     this.discarded += before - this.queue.length;
   }
@@ -70,23 +70,28 @@ class ReaderQueue {
       );
     this.fresh();
     if (!this.config.enabled) {
-      if (wasEnabled || this.busy || this.queue.length) this.clear();
+      this.queue = this.queue.filter((m) => m.announcement);
+      if (this.busy && !this.current?.announcement) this.stop();
+      if (!this.queue.length) clearTimeout(this.timer);
+      this.pump();
     } else this.pump();
   }
   receive(message) {
     const c = this.config;
     if (
-      !c.enabled ||
+      (!c.enabled && !message.announcement) ||
       message.historical ||
-      this.blocked(message) ||
+      (!message.announcement && this.blocked(message)) ||
       !message.text?.trim() ||
-      (c.ignoreCommands && /^\s*[!！]/.test(message.text))
+      (!message.announcement &&
+        c.ignoreCommands &&
+        /^\s*[!！]/.test(message.text))
     )
       return;
     const user = nick(message.login || message.user),
       high = c.high.includes(user),
       low = !high && c.low.includes(user);
-    if (!high) {
+    if (!high && !message.announcement) {
       if (low) {
         if (++this.lowCount % c.lowEvery) {
           if (!this.busy)
@@ -106,10 +111,10 @@ class ReaderQueue {
     this.fresh();
     const item = {
       ...message,
-      text: message.text.slice(0, c.maxChars),
-      priority: high ? 0 : low ? 2 : 1,
+      text: message.text.slice(0, message.announcement ? 1000 : c.maxChars),
+      priority: message.announcement ? -1 : high ? 0 : low ? 2 : 1,
       queuedAt: this.now(),
-      expiresAt: this.now() + c.maxWait * 1000,
+      expiresAt: this.now() + (message.announcement ? 120 : c.maxWait) * 1000,
     };
     if (this.queue.length >= c.maxQueue) {
       const worst = this.queue.findLastIndex(
@@ -126,13 +131,26 @@ class ReaderQueue {
     }
     this.queue.push(item);
     this.queue.sort((a, b) => a.priority - b.priority);
+    if (
+      message.announcement &&
+      this.busy &&
+      this.current &&
+      !this.current.announcement
+    )
+      this.stop();
     this.pump();
   }
   async pump() {
-    if (this.busy || !this.config.enabled) return;
+    if (
+      this.busy ||
+      (!this.config.enabled && !this.queue.some((m) => m.announcement))
+    )
+      return;
     this.fresh();
     if (!this.queue.length) return;
-    const remaining = this.config.interval * 1000 - (this.now() - this.last);
+    const remaining = this.queue[0].announcement
+      ? 0
+      : this.config.interval * 1000 - (this.now() - this.last);
     if (remaining > 0) {
       clearTimeout(this.timer);
       this.timer = setTimeout(() => this.pump(), remaining);
@@ -150,12 +168,25 @@ class ReaderQueue {
         `Preparando voz de ${item.user} · ${this.queue.length} na fila · ${this.discarded} descartadas pelo limite/filtro`,
       );
       await this.speak(item, this.config);
-      if (generation === this.generation && this.config.enabled)
+      if (
+        generation === this.generation &&
+        (this.config.enabled || item.announcement)
+      )
         this.status(
           `Leitura concluída · ${item.user} · ${this.queue.length} na fila`,
         );
     } catch (error) {
       this.status(error.message);
+      if (
+        item.announcement &&
+        generation === this.generation &&
+        !item.retried &&
+        this.now() < item.expiresAt
+      ) {
+        item.retried = true;
+        this.queue.unshift(item);
+        this.status('Aviso privado: uma nova tentativa de voz será feita.');
+      }
     } finally {
       this.current = null;
       this.busy = false;
@@ -163,8 +194,13 @@ class ReaderQueue {
     }
   }
   prune() {
-    this.queue = this.queue.filter((m) => !this.blocked(m));
-    if (this.current && this.blocked(this.current)) this.stop();
+    this.queue = this.queue.filter((m) => m.announcement || !this.blocked(m));
+    if (
+      this.current &&
+      !this.current.announcement &&
+      this.blocked(this.current)
+    )
+      this.stop();
   }
   remove(platform, id) {
     this.queue = this.queue.filter(

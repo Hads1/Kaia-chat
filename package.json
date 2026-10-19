@@ -1,6 +1,6 @@
 {
   "name": "kaia-chat",
-  "version": "0.9.6",
+  "version": "0.10.3",
   "description": "Overlay de leitura Twitch e Kick",
   "main": "main.js",
   "license": "GPL-3.0-only",

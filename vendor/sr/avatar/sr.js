@@ -9,9 +9,8 @@
         sr &&
         sr.titulo &&
         ['sr', 'voz', 'playlist'].includes(sr.fonte_atual) &&
-        idade(sr) < 4 &&
-        !sr.erro;
-      if (srValido && sr.tocando && !sr.paused) {
+        idade(sr) < 4;
+      if (srValido) {
         return sr;
       }
       if (
@@ -82,11 +81,7 @@
       return;
     }
     tit.textContent = spotify ? d.faixa || d.titulo : d.titulo;
-    who.textContent = spotify
-      ? d.artista || 'Spotify'
-      : d.user
-        ? 'pedido por ' + d.user
-        : '';
+    who.textContent = spotify ? d.artista || 'Spotify' : '';
     let elapsed = Number(d.elapsed) || 0;
     const dur = Number(d.dur) || 0;
     if (d.tocando && d.quando)

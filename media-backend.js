@@ -60,6 +60,13 @@ class MediaBackend {
                   resolve();
                   return;
                 }
+                if (packet.event === 'audio-error') {
+                  this.status(
+                    'reader',
+                    String(packet.text || 'Falha no áudio privado.'),
+                  );
+                  return;
+                }
                 const pending = this.pending.get(packet.id);
                 if (!pending) return;
                 this.pending.delete(packet.id);
@@ -76,6 +83,7 @@ class MediaBackend {
           this.process.on('exit', () => {
             clearTimeout(timeout);
             this.ready = null;
+            this.process = null;
             reject(Error('Motor de áudio encerrado.'));
             for (const pending of this.pending.values()) {
               clearTimeout(pending.timer);
@@ -93,10 +101,27 @@ class MediaBackend {
       const id = ++this.sequence,
         timer = setTimeout(() => {
           this.pending.delete(id);
-          reject(Error('A operação de áudio excedeu o tempo.'));
+          reject(
+            Error(
+              `O comando ${action} demorou demais. Os outros controles continuam disponíveis; tente novamente.`,
+            ),
+          );
         }, timeout);
       this.pending.set(id, { resolve, reject, timer });
-      this.process.stdin.write(JSON.stringify({ id, action, args }) + '\n');
+      this.process.stdin.write(
+        JSON.stringify({ id, action, args }) + '\n',
+        (error) => {
+          if (error) {
+            clearTimeout(timer);
+            this.pending.delete(id);
+            reject(
+              Error(
+                'Motor de áudio desconectado. Tente novamente para reiniciar.',
+              ),
+            );
+          }
+        },
+      );
     });
   }
   async close() {

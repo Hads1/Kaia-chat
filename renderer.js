@@ -96,11 +96,14 @@ async function play(p, force = false) {
   audio[p].volume = Number($(`#${p}-volume`).value);
   audio[p].currentTime = 0;
   try {
-    await audio[p].play();
+    await window.kaia.chatSound({
+      sound: $(`#${p}-sound`).value,
+      volume: Number($(`#${p}-volume`).value),
+    });
   } catch {
     if (force)
       $('#error').textContent =
-        'Não foi possível reproduzir este arquivo de áudio.';
+        'Não foi possível tocar o som. Escolha e salve a saída do leitor na aba Leitor.';
   }
 }
 $('#connect').onclick = async () => {

@@ -96,4 +96,34 @@ class AudioRouting(unittest.TestCase):
         proc=audio_out.PlayerProc(thread=worker,result=[1],progress=[3.5])
         self.assertEqual(proc.poll(),1);self.assertEqual(proc.played_seconds,3.5)
 
+    def test_separate_queues_reorder_and_remove_without_crossing_groups(self):
+        p=self.player();p._lock=threading.RLock();p.shuffle_pl=True
+        p.fila=[{'key':'p1','fonte':'playlist'},{'key':'r1','fonte':'sr'},{'key':'p2','fonte':'playlist'},{'key':'r2','fonte':'sr'}]
+        p.edit_queue('sr','move','r2',0)
+        self.assertEqual([x['key'] for x in p.fila],['p1','r2','p2','r1']);self.assertFalse(p.shuffle_pl)
+        p.edit_queue('sr','remove','r1');p.edit_queue('playlist','clear')
+        self.assertEqual([x['key'] for x in p.fila],['r2'])
+
+    def test_request_is_next_even_when_background_playlist_came_first(self):
+        p=self.player();p.shuffle_pl=False
+        p.fila=[{'key':'p1','fonte':'playlist','status':'ok','arquivo':'a'},{'key':'r1','fonte':'sr','status':'ok','arquivo':'b'}]
+        self.assertEqual(p._pegar_proximo()['key'],'r1')
+        self.assertEqual(p._pegar_proximo()['key'],'p1')
+
+    def test_limits_are_independent_and_preserve_already_accepted_tracks(self):
+        p=self.player();p.fila=[{'key':'keep'}];p.set_limits(3,12)
+        self.assertEqual(p.request_limit,3);self.assertEqual(p.playlist_limit,12);self.assertEqual(len(p.fila),1)
+
+    def test_request_resolution_does_not_wait_for_background_playlist(self):
+        p=self.player();p._lock=threading.RLock();p._dl_sema=threading.Semaphore(0);p._request_sema=threading.Semaphore(1)
+        item={'fonte':'sr','key':'request'};p.fila=[item];p._resolver_inner=Mock()
+        done=threading.Event()
+        worker=threading.Thread(target=lambda:(p._resolver(item),done.set()),daemon=True);worker.start()
+        self.assertTrue(done.wait(.5));p._resolver_inner.assert_called_once_with(item)
+
+    def test_stop_holds_queue_until_explicit_play(self):
+        p=self.player();p._lock=threading.RLock();p.fila=[{'status':'ok','fonte':'sr'}];p.paused=False;p.acc=4;p.t0=0
+        p.stop();self.assertTrue(p.paused);self.assertEqual(len(p.fila),1)
+        p.play_pause();self.assertFalse(p.paused)
+
 if __name__=='__main__':unittest.main()

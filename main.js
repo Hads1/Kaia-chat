@@ -7,6 +7,7 @@ const {
   Tray,
   Menu,
   clipboard,
+  screen,
 } = require('electron');
 const fs = require('fs');
 const path = require('path');
@@ -192,11 +193,14 @@ app.whenReady().then(async () => {
       (m) => !isBlocked(settings.blockedUsers, m.platform, m.login || m.user),
     );
   };
+  const workArea = screen.getDisplayNearestPoint(
+    screen.getCursorScreenPoint(),
+  ).workArea;
   win = new BrowserWindow({
-    width: 510,
-    height: 860,
-    minWidth: 340,
-    minHeight: 300,
+    width: Math.min(510, workArea.width),
+    height: Math.min(860, workArea.height),
+    minWidth: Math.min(320, workArea.width),
+    minHeight: Math.min(240, workArea.height),
     transparent: true,
     titleBarStyle: 'hidden',
     titleBarOverlay: { color: '#0d1019', symbolColor: '#eeeeee', height: 47 },

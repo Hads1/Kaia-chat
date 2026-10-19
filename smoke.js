@@ -327,6 +327,7 @@ module.exports = async (win, app, emit, config, transcript) => {
     windowTests.sizes = [];
     for (const size of [
       [340, 500],
+      [320, 300],
       [510, 860],
       [960, 650],
     ]) {
@@ -468,8 +469,114 @@ module.exports = async (win, app, emit, config, transcript) => {
     const backupPassed =
       backup.includes('Esta mensagem deve ser bloqueada') &&
       backup.includes('Mensagem com tempo individual');
+    const v10 = {};
+    emit('sr-state', {
+      titulo: 'Faixa atual',
+      user: 'PessoaTeste',
+      dur: 120,
+      elapsed: 10,
+      tocando: true,
+      paused: false,
+      estado: 'playing',
+      repeat: 'off',
+      fila: [
+        {
+          key: 'r1',
+          titulo: 'Pedido A',
+          user: 'PessoaA',
+          fonte: 'sr',
+          status: 'ok',
+        },
+        {
+          key: 'p1',
+          titulo: 'Fundo B',
+          user: 'Operador',
+          fonte: 'playlist',
+          status: 'ok',
+        },
+      ],
+      request_count: 1,
+      playlist_count: 1,
+    });
+    await new Promise((r) => setTimeout(r, 80));
+    v10.queues = await win.webContents.executeJavaScript(
+      `document.getElementById('sr-queue').children.length===1&&document.getElementById('sr-background-queue').children.length===1&&document.getElementById('sr-request-count').textContent==='1'&&document.getElementById('sr-playlist-count').textContent==='1'&&document.getElementById('chat-sr-requester').textContent.includes('PessoaTeste')`,
+    );
+    v10.drag = await win.webContents.executeJavaScript(
+      `getComputedStyle(document.querySelector('.window-drag-strip')).getPropertyValue('-webkit-app-region')==='drag'`,
+    );
+    const { SRShortcuts } = require('./sr-shortcuts');
+    const { globalShortcut } = require('electron');
+    const shortcutProbe = new SRShortcuts(globalShortcut, () => {});
+    try {
+      shortcutProbe.configure({ play_pause: 'Ctrl+Alt+Shift+F12' });
+      v10.shortcut = globalShortcut.isRegistered('Ctrl+Alt+Shift+F12');
+    } finally {
+      shortcutProbe.clear();
+    }
+    fs.writeFileSync(
+      path.join(app.getPath('userData'), 'media/avatar/sr.json'),
+      JSON.stringify({
+        titulo: 'SR privado',
+        user: 'PessoaPrivada',
+        fila: [{ user: 'PessoaFila', titulo: 'Pedido' }],
+      }),
+    );
+    const publicSR = await (
+      await fetch(mediaTests.srUrl.replace('sr.html', 'sr.json'))
+    ).json();
+    v10.hudPrivate =
+      !('user' in publicSR) &&
+      (publicSR.fila || []).every((item) => !('user' in item));
+    const { AlertSources } = require('./alerts');
+    const http = require('node:http');
+    const alertEvents = [];
+    const alertServer = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      res.end(
+        '<div id="alert-message">Antigo</div><iframe id="frame" srcdoc="<div id=alert-message></div>"></iframe><script>let n=0;const animate=()=>{document.getElementById("alert-message").style.transform="translateX("+(n++%2)+"px)";if(n<400)requestAnimationFrame(animate);};animate();setTimeout(()=>document.getElementById("alert-message").textContent="TestePessoa seguiu o canal",900);setTimeout(()=>document.getElementById("alert-message").textContent="",1400);setTimeout(()=>document.getElementById("frame").contentDocument.getElementById("alert-message").textContent="TesteSub se inscreveu",2100);setTimeout(()=>document.getElementById("frame").contentDocument.getElementById("alert-message").textContent="",2700);</script>',
+      );
+    });
+    await new Promise((r) => alertServer.listen(0, '127.0.0.1', r));
+    const alertProbe = new AlertSources({
+      event: (v) => alertEvents.push(v),
+      status: () => {},
+    });
+    try {
+      alertProbe.configure([
+        {
+          name: 'Fonte de teste',
+          provider: 'custom',
+          selector: '#alert-message',
+          url: 'http://127.0.0.1:' + alertServer.address().port + '/widget',
+        },
+      ]);
+      const deadline = Date.now() + 8000;
+      while (alertEvents.length < 2 && Date.now() < deadline)
+        await new Promise((r) => setTimeout(r, 100));
+      v10.alerts =
+        alertEvents.length === 2 &&
+        alertEvents[0].text.includes('seguiu') &&
+        alertEvents[1].text.includes('inscreveu') &&
+        Array.from(alertProbe.windows.values()).every((x) =>
+          x.window.webContents.isAudioMuted(),
+        );
+    } finally {
+      alertProbe.close();
+      await new Promise((r) => alertServer.close(r));
+    }
+    emit('alert-state', {
+      source: 'Fonte de teste',
+      text: 'TestePessoa seguiu o canal',
+      at: Date.now(),
+    });
+    await new Promise((r) => setTimeout(r, 50));
+    v10.lastAlert = await win.webContents.executeJavaScript(
+      `document.getElementById('last-alert').textContent.includes('seguiu')&&document.getElementById('chat-last-alert').textContent.includes('seguiu')`,
+    );
     const result = {
       passed:
+        Object.values(v10).every(Boolean) &&
         passed &&
         overlayPassed &&
         blockingPassed &&
@@ -501,6 +608,7 @@ module.exports = async (win, app, emit, config, transcript) => {
       windowTests,
       mediaTests,
       playerTests,
+      v10,
     };
     fs.writeFileSync(
       path.join(__dirname, 'smoke-result.json'),

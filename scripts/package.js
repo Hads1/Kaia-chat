@@ -25,6 +25,11 @@ fs.renameSync(
 const appDir = path.join(stage, 'resources/app');
 fs.mkdirSync(path.join(appDir, 'node_modules'), { recursive: true });
 const source = [
+  'sr-shortcuts.js',
+  'sr-settings-ui.js',
+  'alerts.js',
+  'alerts-preload.js',
+  'alerts-ui.js',
   'media-cleanup.js',
   'reader.js',
   'player-ui.js',

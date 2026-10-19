@@ -45,6 +45,14 @@ test('despachante encaminha !sr das quatro plataformas, sem históricos, bloquea
     './spotify': { Spotify: SpotifyFake },
     './youtube-session': { YouTubeSession: SessionFake },
     './sr-assets': { createSRRoutes: () => () => {} },
+    './alerts': {
+      AlertSources: class {
+        configure(rows) {
+          return rows;
+        }
+        close() {}
+      },
+    },
   };
   new Function(
     'require',
@@ -728,4 +736,340 @@ test('intervalo do leitor não acrescenta outra pausa depois de uma fala longa',
   reader.clear();
   waiters.shift()();
   await new Promise((r) => setImmediate(r));
+});
+
+test('atalhos globais rejeitam conflitos e restauram o conjunto anterior', () => {
+  const { SRShortcuts } = require('./sr-shortcuts');
+  const registered = new Map();
+  const calls = [];
+  const api = {
+    register: (key, fn) => {
+      if (key === 'Ctrl+Alt+X' || registered.has(key)) return false;
+      registered.set(key, fn);
+      return true;
+    },
+    unregister: (key) => registered.delete(key),
+  };
+  const s = new SRShortcuts(api, (action) => calls.push(action));
+  s.configure({ play_pause: 'Ctrl+Alt+P', skip: 'Ctrl+Alt+Right' });
+  registered.get('Ctrl+Alt+P')();
+  assert.deepEqual(calls, ['play_pause']);
+  assert.throws(() => s.configure({ stop: 'Ctrl+Alt+X' }), /em uso/);
+  assert.ok(registered.has('Ctrl+Alt+P'));
+  assert.ok(registered.has('Ctrl+Alt+Right'));
+  assert.throws(() => s.configure({ stop: 'Ctrl+Shift+F9' }), /reservado/);
+  s.clear();
+  assert.equal(registered.size, 0);
+});
+
+test('fontes de alertas aceitam serviços personalizados e rejeitam protocolos executáveis', () => {
+  const { normalizeAlerts } = require('./alerts');
+  const rows = normalizeAlerts([
+    {
+      url: 'https://streamlabs.com/alert-box/fixture',
+      provider: 'streamlabs',
+      name: 'Twitch',
+    },
+  ]);
+  assert.equal(rows[0].name, 'Twitch');
+  assert.ok(rows[0].selector.includes('alert-message'));
+  assert.throws(
+    () => normalizeAlerts([{ url: 'javascript:alert(1)', selector: 'body' }]),
+    /HTTP/,
+  );
+  assert.throws(
+    () => normalizeAlerts([{ url: 'https://example.com', provider: 'custom' }]),
+    /seletor/,
+  );
+  const custom = normalizeAlerts([
+    {
+      url: 'http://127.0.0.1:1000/widget',
+      selector: '#texto',
+      provider: 'custom',
+    },
+  ]);
+  assert.equal(custom[0].selector, '#texto');
+});
+
+test('HUD preserva a faixa do SR mesmo com Spotify tocando e erro de reconexão', () => {
+  const hud = require('./vendor/sr/avatar/sr');
+  const sr = {
+    titulo: 'Pedido SR',
+    fonte_atual: 'sr',
+    quando: 100,
+    tocando: true,
+    erro: 'retomando',
+  };
+  const sp = {
+    titulo: 'Spotify',
+    quando: 100,
+    tocando: true,
+    estado: 'PLAYING',
+  };
+  assert.equal(hud.escolherEstado(sr, sp, 101).titulo, 'Pedido SR');
+  assert.equal(hud.escolherEstado(null, sp, 101).titulo, 'Spotify');
+});
+
+test('avisos de músicas e alertas usam a fila de voz mesmo com leitura normal desligada', async () => {
+  const spoken = [];
+  const r = new ReaderQueue({ speak: async (m) => spoken.push(m.text) });
+  r.configure({ enabled: false, output: 'Headset', interval: 0, every: 100 });
+  r.receive({ user: 'Kaia', text: 'Pessoa pediu música', announcement: true });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(spoken, ['Pessoa pediu música']);
+  r.receive({ user: 'Pessoa', text: 'chat normal' });
+  assert.equal(spoken.length, 1);
+  r.clear();
+});
+
+test('URL do HUD omite solicitante e usuários da fila', async () => {
+  const fs = require('node:fs/promises'),
+    os = require('node:os'),
+    path = require('node:path');
+  const { createSRRoutes } = require('./sr-assets');
+  const directory = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'kaia-hud-private-'),
+  );
+  await fs.mkdir(path.join(directory, 'avatar'));
+  await fs.writeFile(
+    path.join(directory, 'avatar/sr.json'),
+    JSON.stringify({
+      titulo: 'Faixa',
+      user: 'privado',
+      fila: [{ user: 'outro', titulo: 'Pedido' }],
+    }),
+  );
+  let result = '';
+  const res = {
+    setHeader() {},
+    writeHead() {},
+    end: (value) => (result = value),
+  };
+  await createSRRoutes({ directory, backend: {} })(
+    { method: 'GET' },
+    res,
+    'sr.json',
+  );
+  const state = JSON.parse(result);
+  assert.equal(state.titulo, 'Faixa');
+  assert.equal(state.user, undefined);
+  assert.equal(state.fila[0].user, undefined);
+});
+
+test('avisos não expiram com prazo curto do chat e interrompem a fala normal', async () => {
+  let now = 100000;
+  const spoken = [],
+    waiters = [];
+  let stops = 0;
+  const r = new ReaderQueue({
+    now: () => now,
+    speak: (m) => {
+      spoken.push(m);
+      return new Promise((resolve) => waiters.push(resolve));
+    },
+    stop: () => stops++,
+  });
+  r.configure({
+    enabled: true,
+    output: 'Headset',
+    interval: 1,
+    maxWait: 5,
+    maxChars: 50,
+  });
+  r.receive({ user: 'Normal', text: 'mensagem longa' });
+  r.receive({
+    user: 'Pessoa',
+    text: 'Pessoa pediu o título completo da música adicionada ao SR.',
+    announcement: true,
+  });
+  assert.equal(stops, 1);
+  now += 12000;
+  waiters.shift()();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(spoken.length, 2);
+  assert.ok(spoken[1].announcement);
+  assert.ok(spoken[1].text.length > 50);
+  r.configure({ enabled: false, output: 'Headset', interval: 1, maxWait: 5 });
+  assert.equal(stops, 1);
+  r.clear();
+  waiters.shift()();
+  await new Promise((resolve) => setImmediate(resolve));
+});
+
+test('falha transitória de um aviso privado tem uma tentativa adicional', async () => {
+  let calls = 0;
+  const r = new ReaderQueue({
+    speak: async () => {
+      if (++calls === 1) throw Error('rede');
+    },
+  });
+  r.configure({ output: 'Headset', enabled: false, interval: 0 });
+  r.receive({ user: 'Kaia', text: 'Pessoa seguiu', announcement: true });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(calls, 2);
+  r.clear();
+});
+
+test('pedido resolvido e texto de alerta chegam ao backend de voz com a leitura normal desativada', async () => {
+  const fs = require('node:fs'),
+    os = require('node:os'),
+    path = require('node:path');
+  const timers = [],
+    spoken = [],
+    states = [];
+  let alertHandler;
+  let snapshot = { notifications: [], fila: [] };
+  class Backend {
+    async start() {
+      this.process ||= {};
+    }
+    async call(action, args) {
+      await this.start();
+      if (action === 'state') return snapshot;
+      if (action === 'speak') spoken.push(args);
+      return true;
+    }
+    async close() {}
+  }
+  class SpotifyFake {
+    start() {}
+    info() {
+      return {};
+    }
+    close() {}
+  }
+  class AlertFake {
+    constructor(opts) {
+      alertHandler = opts.event;
+    }
+    configure(v) {
+      return v;
+    }
+    close() {}
+  }
+  const deps = {
+    electron: {
+      ipcMain: { handle() {} },
+      shell: {},
+      safeStorage: {},
+      globalShortcut: {},
+    },
+    './media-backend': { MediaBackend: Backend },
+    './spotify': { Spotify: SpotifyFake },
+    './alerts': { AlertSources: AlertFake },
+    './youtube-session': {
+      YouTubeSession: class {
+        async cookies() {
+          return [];
+        }
+        close() {}
+      },
+    },
+    './sr-assets': { createSRRoutes: () => () => {} },
+  };
+  const mod = { exports: {} };
+  new Function(
+    'require',
+    'module',
+    'exports',
+    'setInterval',
+    'clearInterval',
+    fs.readFileSync(path.join(__dirname, 'media.js'), 'utf8'),
+  )(
+    (name) => deps[name] || require(name),
+    mod,
+    mod.exports,
+    (fn) => {
+      timers.push(fn);
+      return { unref() {} };
+    },
+    () => {},
+  );
+  const settings = {
+    reader: { enabled: false, output: 'Headset', interval: 0, maxWait: 5 },
+    sr: { enabled: true, announceRequests: true },
+  };
+  const manager = mod.exports.installMedia({
+    win: {},
+    directory: fs.mkdtempSync(path.join(os.tmpdir(), 'kaia-announcements-')),
+    getSettings: () => settings,
+    saveSettings() {},
+    emit: (type, data) => states.push({ type, data }),
+    widgetServer: { url: 'http://127.0.0.1:1/token/widget.html' },
+    smoke: false,
+  });
+  try {
+    await new Promise((resolve) => setImmediate(resolve));
+    snapshot = {
+      notifications: [
+        {
+          key: 'fixture-request',
+          user: 'PessoaTeste',
+          titulo: 'Faixa Teste',
+          at: Date.now() / 1000,
+        },
+      ],
+      fila: [],
+    };
+    await timers[0]();
+    await new Promise((resolve) => setImmediate(resolve));
+    alertHandler({
+      source: 'Streamlabs',
+      text: 'OutraPessoa seguiu o canal',
+      at: Date.now(),
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(spoken.length, 2);
+    assert.equal(spoken[0].message.text, 'PessoaTeste pediu Faixa Teste.');
+    assert.equal(spoken[0].config.sayName, false);
+    assert.equal(
+      spoken[1].message.text,
+      'Streamlabs: OutraPessoa seguiu o canal',
+    );
+    assert.ok(spoken.every((x) => x.config.output === 'Headset'));
+    await timers[0]();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(spoken.length, 2);
+    assert.ok(
+      states.some(
+        (x) => x.type === 'announcement-state' && x.data.phase === 'done',
+      ),
+    );
+  } finally {
+    await manager.close();
+  }
+});
+
+test('alerta aguarda duração configurada, fim do áudio e desaparecimento automático', () => {
+  const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
+  function fixture(seconds){
+    let clock=100000,configHandler,sample,shown=false,text='',playing=false;
+    const sent=[];
+    const view={frameElement:null,getComputedStyle:e=>({display:'block',visibility:'visible',opacity:e===parent&&!shown?'0':'1'})};
+    const document={defaultView:view,documentElement:{},querySelector(){return null;},querySelectorAll(q){return q==='audio,video'?[media]:q==='#alert-text'?[node]:[];}};
+    const parent={ownerDocument:document,parentElement:null,getRootNode:()=>document};
+    const node={ownerDocument:document,parentElement:parent,getClientRects:()=>[{}],get innerText(){return text;},contains:()=>false};
+    const media={get paused(){return !playing;},ended:false,readyState:4};
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname,'alerts-preload.js'),'utf8'),{
+      require:()=>({ipcRenderer:{on:(_,f)=>configHandler=f,send:(channel,data)=>sent.push({channel,data,at:clock})}}),
+      document,Date:{now:()=>clock},MutationObserver:class{observe(){}disconnect(){}},
+      clearInterval(){},clearTimeout(){},setTimeout(){return 1;},setInterval:f=>{sample=f;return 1;}
+    });
+    configHandler(null,{selector:'#alert-text',durationSeconds:seconds});
+    return {tick(ms,state={}){clock+=ms;if('shown'in state)shown=state.shown;if('text'in state)text=state.text;if('playing'in state)playing=state.playing;sample();},events:()=>sent.filter(x=>x.channel==='alerts-text')};
+  }
+  for(const duration of [5,10]){
+    const f=fixture(duration);f.tick(0,{shown:true,text:'Pessoa seguiu o canal',playing:true});
+    f.tick(duration*1000-1);assert.equal(f.events().length,0);
+    f.tick(1);assert.equal(f.events().length,0,'áudio em andamento bloqueia agradecimento');
+    f.tick(500,{playing:false});assert.equal(f.events().length,1);
+    assert.equal(f.events()[0].data.text,'Pessoa seguiu o canal');f.tick(1000);assert.equal(f.events().length,1);
+  }
+  const f=fixture(0);f.tick(0,{shown:true,text:'Outra pessoa enviou uma mensagem'});f.tick(11000);assert.equal(f.events().length,0);
+  f.tick(1,{shown:false,playing:true});f.tick(1000);assert.equal(f.events().length,0);
+  f.tick(1,{playing:false});f.tick(400);assert.equal(f.events().length,1);
+  const changes=fixture(5);changes.tick(0,{shown:true,text:'Primeira pessoa seguiu'});
+  changes.tick(1000,{text:'Segunda pessoa seguiu'});assert.equal(changes.events().length,0);
+  changes.tick(4000);assert.equal(changes.events().length,1);
+  changes.tick(1000);assert.equal(changes.events().length,2);
 });

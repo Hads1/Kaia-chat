@@ -8,6 +8,7 @@ import subprocess
 import threading
 import time
 import atexit
+import uuid
 import unicodedata
 from pathlib import Path
 from types import SimpleNamespace
@@ -766,8 +767,12 @@ class SongRequest:
         self._retried = False
         self._visto = {}
         self._dl_sema = threading.Semaphore(1)
+        self._request_sema = threading.Semaphore(1)
         self.repeat = "off"
         self.shuffle_pl = False
+        self.request_limit=80
+        self.playlist_limit=60
+        self.notifications=[]
         from spotify_agora import iniciar_monitor
         iniciar_monitor()
         threading.Thread(target=self._loop, daemon=True).start()
@@ -798,13 +803,15 @@ class SongRequest:
                 if agora - ultimo < 10:
                     return "Já peguei esse pedido."
                 self._visto[chave] = agora
-                if len(self.fila) >= MAX_FILA:
+                is_background=fonte=='playlist'
+                if sum((self._fonte_de(x)=='playlist')==is_background for x in self.fila) >= (self.playlist_limit if is_background else self.request_limit):
                     return "Fila cheia. Espera uma sair."
                 if any((x.get("q") or "").lower() == q.lower() for x in self.fila):
                     return "Essa já tá na fila."
                 if self.atual and (self.atual.get("q") or "").lower() == q.lower():
                     return "Essa já tá tocando."
                 item = {
+                    "key":uuid.uuid4().hex,
                     "user": user,
                     "q": q,
                     "titulo": q,
@@ -864,7 +871,7 @@ class SongRequest:
         pulou = 0
         itens = []
         for ln in linhas:
-            if added >= MAX_PLAYLIST:
+            if added >= self.playlist_limit:
                 pulou += 1
                 continue
             partes = (ln.split("\t") + ["", "", "0"])[:3]
@@ -885,10 +892,11 @@ class SongRequest:
                 pulou += 1
                 continue
             with self._lock:
-                if len(self.fila) >= MAX_FILA:
+                if sum(self._fonte_de(x)=='playlist' for x in self.fila) >= self.playlist_limit:
                     pulou += 1
                     continue
                 item = {
+                    "key":uuid.uuid4().hex,
                     "user": user,
                     "q": q,
                     "id": vid,
@@ -914,7 +922,10 @@ class SongRequest:
         return msg
 
     def _resolver(self, item: dict):
-        with self._dl_sema:
+        semaphore=self._dl_sema if self._fonte_de(item)=='playlist' else self._request_sema
+        with semaphore:
+            with self._lock:
+                if self.atual is not item and not any(x is item for x in self.fila):return
             self._resolver_inner(item)
 
     def _resolver_inner(self, item: dict):
@@ -965,6 +976,11 @@ class SongRequest:
                 if escolhido:
                     item["id"], item["titulo"], item["dur"] = escolhido
                 self.erro = ""
+                with self._lock:
+                    if not item.get('_announced') and item.get('fonte')!='playlist' and (any(x is item for x in self.fila) or self.atual is item):
+                        item['_announced']=True
+                        self.notifications.append({'key':item.get('key') or uuid.uuid4().hex,'user':item.get('user') or 'Alguém','titulo':item.get('titulo') or '', 'at':time.time()})
+                        self.notifications=self.notifications[-100:]
         except Exception as exc:
             item["status"] = "erro"
             item["titulo"] = str(exc)[:80]
@@ -986,6 +1002,9 @@ class SongRequest:
     def play_pause(self):
         if not self.atual and any(x.get('status')=='erro' for x in self.fila):
             return self.retry()
+        if not self.atual:
+            self.paused=False
+            return
         if self.atual and self.proc is None and not self.paused:
             self._spawn(self.atual.get('stream') or self.atual.get('arquivo') or '',ss=self.acc)
             return
@@ -1010,7 +1029,7 @@ class SongRequest:
             with self._lock:
                 self._kill()
                 self.atual = None
-                self.paused = False
+                self.paused = True
                 self.acc = 0
                 self.t0 = 0
         except Exception as exc:
@@ -1141,6 +1160,29 @@ class SongRequest:
                 self.t0 = time.time()
                 self._spawn(self.atual.get("arquivo") or "", ss=ss)
 
+    def set_limits(self, requests=80, playlist=60):
+        self.request_limit=max(1,min(500,int(requests)))
+        self.playlist_limit=max(1,min(500,int(playlist)))
+        return 'Limites atualizados; músicas já aceitas foram preservadas.'
+
+    def edit_queue(self, group, operation, key='', target=0):
+        if group not in ('sr','playlist'):raise ValueError('Fila inválida.')
+        if operation not in ('remove','clear','move'):raise ValueError('Edição inválida.')
+        with self._lock:
+            indexes=[i for i,x in enumerate(self.fila) if (self._fonte_de(x)=='playlist')==(group=='playlist')]
+            if operation=='clear':
+                self.fila=[x for i,x in enumerate(self.fila) if i not in indexes]
+                return 'Fila limpa; a faixa atual foi mantida.'
+            source=next((i for i in indexes if self.fila[i].get('key')==key),None)
+            if source is None:raise ValueError('Música não está mais na fila.')
+            if operation=='remove':self.fila.pop(source);return 'Música removida.'
+            rows=[self.fila[i] for i in indexes]
+            old=indexes.index(source);dest=max(0,min(len(rows)-1,int(target)))
+            rows.insert(dest,rows.pop(old))
+            for i,row in zip(indexes,rows):self.fila[i]=row
+            self.shuffle_pl=False
+            return 'Ordem manual salva; aleatório desativado.'
+
     def mute_toggle(self):
         try:
             with self._lock:
@@ -1213,7 +1255,7 @@ class SongRequest:
                     "saida": self.saida,
                     "tempo": f"{fmt(el)} / {fmt(dur) if dur else '--:--'}" if self.atual else "--:--",
                     "fila": [
-                        {"user": x.get("user"), "titulo": _titulo_bonito(x), "status": x.get("status"), "fonte": self._fonte_de(x),"dur":x.get('dur') or 0,"erro":x.get('erro') or ''}
+                        {"key":x.get('key'),'user': x.get("user"), "titulo": _titulo_bonito(x), "status": x.get("status"), "fonte": self._fonte_de(x),"dur":x.get('dur') or 0,"erro":x.get('erro') or ''}
                         for x in list(self.fila)
                     ],
                     "fila_voz": [
@@ -1230,6 +1272,9 @@ class SongRequest:
                     ],
                     "fonte_atual": self._fonte_de(self.atual) if self.atual else "",
                     "erro": self.erro,
+                    "notifications":list(getattr(self,'notifications',[])),
+                    "request_count":sum(self._fonte_de(x)!='playlist' for x in self.fila),
+                    "playlist_count":sum(self._fonte_de(x)=='playlist' for x in self.fila),
                     "estado": 'playing' if self.atual and not self.paused and self.proc is not None and self.proc.poll() is None else 'loading' if getattr(self,'_recovering',False) and self.atual and not self.paused else 'paused' if self.atual and self.paused else 'error' if (self.atual and self.erro) or any(x.get('status')=='erro' for x in self.fila) else 'loading' if any(x.get('status') in ('fila','busca','baixa','stream') for x in self.fila) else 'idle',
                     "tem_ytdlp": bool(_YTD_CACHE.get('cmd')),
                     "tem_player": bool(_player() or _ffmpeg()),

@@ -1,4 +1,10 @@
-const { ipcMain, BrowserWindow, shell, safeStorage } = require('electron');
+const {
+  ipcMain,
+  BrowserWindow,
+  shell,
+  safeStorage,
+  globalShortcut,
+} = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -9,6 +15,8 @@ const { YouTubeSession } = require('./youtube-session');
 const { isBlocked } = require('./blocking');
 const { createSRRoutes } = require('./sr-assets');
 const { cleanupMedia } = require('./media-cleanup');
+const { SRShortcuts } = require('./sr-shortcuts');
+const { AlertSources } = require('./alerts');
 function installMedia({
   win,
   directory,
@@ -26,21 +34,153 @@ function installMedia({
     output: '',
     repeat: 'off',
     shuffle: false,
+    requestLimit: 80,
+    playlistLimit: 60,
+    announceRequests: true,
     ...settings.sr,
   };
-  const backend = new MediaBackend(directory);
+  const backend = new MediaBackend(directory, (kind, text) =>
+    notify(kind, text),
+  );
   const notify = (kind, text) => emit('media-status', { kind, text });
+  let announcementState = null,
+    lastRequest = null;
+  function voiceState(phase, text, error = '') {
+    announcementState = { phase, text, error, at: Date.now() };
+    emit('announcement-state', announcementState);
+  }
   const reader = new ReaderQueue({
-    speak: (message, config) =>
-      backend.call('speak', { message, config }, 180000),
+    speak: async (message, config) => {
+      if (message.announcement) voiceState('preparing', message.text);
+      try {
+        const result = await backend.call(
+          'speak',
+          {
+            message,
+            config: message.announcement
+              ? { ...config, sayName: false }
+              : config,
+          },
+          180000,
+        );
+        if (message.announcement) voiceState('done', message.text);
+        return result;
+      } catch (error) {
+        if (message.announcement)
+          voiceState('error', message.text, error.message);
+        throw error;
+      }
+    },
     stop: () => {
       if (backend.process) backend.call('stop-voice', [], 5000).catch(() => {});
     },
-    status: (text) => notify('reader', text),
+    status: (text) => {
+      notify('reader', text);
+      if (reader.current?.announcement) notify('announcements', text);
+    },
     blocked: (m) =>
       isBlocked(getSettings().blockedUsers, m.platform, m.login || m.user),
   });
   reader.configure(settings.reader);
+  let lastAlert = null;
+  function announce(text, user = 'Kaia') {
+    if (smoke) return;
+    if (!settings.reader.output) {
+      notify('reader', 'Escolha a saída do leitor para ouvir avisos privados.');
+      voiceState('error', text, 'Selecione e salve a saída do Leitor.');
+      return false;
+    }
+    voiceState('queued', text);
+    reader.receive({
+      user,
+      text,
+      announcement: true,
+      platform: 'system',
+      id: crypto.randomUUID(),
+    });
+    return true;
+  }
+  ipcMain.handle('test-announcement', (_, kind) => {
+    const text =
+      kind === 'sr'
+        ? 'Pessoa de teste pediu Música de teste.'
+        : 'Pessoa de teste seguiu o canal. Esta é a mensagem de teste do alerta.';
+    if (!announce(text))
+      throw Error('Selecione e salve a saída de áudio do Leitor primeiro.');
+    return 'Aviso de teste enviado para a fila privada de voz.';
+  });
+  ipcMain.handle('repeat-request', () => {
+    if (!lastRequest) return 'Nenhum pedido novo recebido nesta sessão.';
+    announce(
+      `${lastRequest.user} pediu ${lastRequest.titulo}.`,
+      lastRequest.user,
+    );
+    return true;
+  });
+  const alertSources = new AlertSources({
+    smoke,
+    event: (value) => {
+      lastAlert = value;
+      emit('alert-state', value);
+      announce(value.source + ': ' + value.text);
+    },
+    status: (text) => notify('alerts', text),
+  });
+  try {
+    alertSources.configure(settings.alertSources || []);
+  } catch {
+    notify('alerts', 'Revise os URLs e seletores das fontes de alertas.');
+  }
+  ipcMain.handle('save-alerts', (_, rows) => {
+    const value = alertSources.configure(rows);
+    settings.alertSources = value;
+    saveSettings();
+    return value;
+  });
+  ipcMain.handle('repeat-alert', () => {
+    if (!lastAlert)
+      return 'Nenhum alerta recebido ainda. Salve a fonte e dispare um alerta de teste no serviço.';
+    announce(lastAlert.source + ': ' + lastAlert.text);
+    return true;
+  });
+  ipcMain.handle('preview-alert', (_, id) => alertSources.preview(id));
+  const shortcuts = new SRShortcuts(globalShortcut, (action) =>
+    runSR(action).catch((error) => notify('sr', error.message)),
+  );
+  try {
+    if (!smoke) shortcuts.configure(settings.srShortcuts || {});
+  } catch (error) {
+    notify('sr', error.message);
+  }
+  ipcMain.handle('save-sr-shortcuts', (_, value) => {
+    const saved = shortcuts.configure(value);
+    settings.srShortcuts = saved;
+    saveSettings();
+    return saved;
+  });
+  ipcMain.handle('chat-sound', async (_, value) => {
+    if (smoke) return true;
+    if (!settings.reader.output)
+      throw Error(
+        'Selecione a saída do leitor: os sons do chat usam essa saída privada.',
+      );
+    const sound = String(value?.sound || '');
+    const file = path.isAbsolute(sound)
+      ? sound
+      : path.join(__dirname, 'assets', sound);
+    if (!/\.(wav|mp3|ogg|m4a)$/i.test(file) || !fs.existsSync(file))
+      throw Error('Arquivo de som inválido.');
+    if (smoke) return true;
+    return backend.call(
+      'chat-sound',
+      {
+        file,
+        output: settings.reader.output,
+        volume: Math.min(100, Math.max(0, Number(value.volume) * 100 || 0)),
+      },
+      30000,
+    );
+  });
   const spotify = new Spotify({
     directory,
     storage: safeStorage,
@@ -97,19 +237,43 @@ function installMedia({
     );
     return true;
   }
+  let configuring;
   async function configureSR() {
-    await backend.call('set_volume', [settings.sr.volume]);
-    await backend.call('set_saida', [settings.sr.output]);
-    await backend.call('set_repeat', [settings.sr.repeat]);
-    await backend.call('set_shuffle', [settings.sr.shuffle]);
-    configuredProcess = backend.process;
+    if (configuring) return configuring;
+    configuring = (async () => {
+      await backend.call('set_volume', [settings.sr.volume]);
+      await backend.call('set_saida', [settings.sr.output]);
+      await backend.call('set_repeat', [settings.sr.repeat]);
+      await backend.call('set_shuffle', [settings.sr.shuffle]);
+      await backend.call('set_limits', [
+        settings.sr.requestLimit,
+        settings.sr.playlistLimit,
+      ]);
+      configuredProcess = backend.process;
+    })();
+    try {
+      await configuring;
+    } finally {
+      configuring = null;
+    }
   }
   let configuredProcess, srState;
+  const announced = new Set();
+  const startedAt = Date.now() / 1000;
   const poll = setInterval(async () => {
     if (smoke || closing || pollBusy || !backend.process) return;
     pollBusy = true;
     try {
       srState = await backend.call('state', [], 5000);
+      for (const item of srState.notifications || [])
+        if (!announced.has(item.key)) {
+          announced.add(item.key);
+          if (item.at >= startedAt) lastRequest = item;
+          if (settings.sr.announceRequests && item.at >= startedAt)
+            announce(`${item.user} pediu ${item.titulo}.`, item.user);
+        }
+      if (announced.size > 2000)
+        announced.delete(announced.values().next().value);
       emit('sr-state', srState);
     } catch (error) {
       notify('sr', error.message);
@@ -163,6 +327,7 @@ function installMedia({
   ipcMain.handle('save-sr', async (_, value) => {
     const wasEnabled = settings.sr.enabled;
     settings.sr = {
+      ...settings.sr,
       enabled: !!value.enabled,
       volume: Math.max(0, Math.min(100, Number(value.volume) || 0)),
       output: String(value.output || '').slice(0, 300),
@@ -170,6 +335,21 @@ function installMedia({
         ? value.repeat
         : 'off',
       shuffle: !!value.shuffle,
+      requestLimit: Math.min(
+        500,
+        Math.max(
+          1,
+          Number(value.requestLimit ?? settings.sr.requestLimit) || 80,
+        ),
+      ),
+      playlistLimit: Math.min(
+        500,
+        Math.max(
+          1,
+          Number(value.playlistLimit ?? settings.sr.playlistLimit) || 60,
+        ),
+      ),
+      announceRequests: value.announceRequests ?? settings.sr.announceRequests,
     };
     saveSettings();
     if (!smoke) {
@@ -201,9 +381,12 @@ function installMedia({
     'limpar_historico',
     'apagar_historico',
     'test-audio',
+    'play',
+    'pause',
+    'edit_queue',
   ]);
-  ipcMain.handle('sr-action', async (_, action, args = []) => {
-    if (!actions.has(action) || !Array.isArray(args) || args.length > 3)
+  async function runSR(action, args = []) {
+    if (!actions.has(action) || !Array.isArray(args) || args.length > 4)
       throw Error('Comando SR inválido.');
     if (
       action === 'pedir' &&
@@ -219,6 +402,11 @@ function installMedia({
       });
     if (action === 'retry') await syncCookies();
     const result = await backend.call(action, args);
+    if (action === 'edit_queue' && args[1] === 'move') {
+      settings.sr.shuffle = false;
+      saveSettings();
+      emit('sr-order-manual', true);
+    }
     if (action === 'set_repeat') {
       settings.sr.repeat = args[0];
       saveSettings();
@@ -229,7 +417,8 @@ function installMedia({
     }
     notify('sr', typeof result === 'string' ? result : 'Comando executado.');
     return result;
-  });
+  }
+  ipcMain.handle('sr-action', (_, action, args) => runSR(action, args));
   ipcMain.handle('spotify-action', async (_, action, value) => {
     if (action === 'save') return spotify.configure(value);
     if (action === 'connect') return spotify.connect();
@@ -319,6 +508,11 @@ function installMedia({
       reader: settings.reader,
       sr: settings.sr,
       srState,
+      announcementState,
+      lastRequest,
+      srShortcuts: settings.srShortcuts || {},
+      alertSources: settings.alertSources || [],
+      lastAlert,
       youtubeSession: fs.existsSync(
         path.join(directory, 'sr_auth', 'youtube_cookies.txt'),
       ),
@@ -377,6 +571,8 @@ function installMedia({
       clearInterval(poll);
       clearInterval(cookieTimer);
       spotify.close();
+      shortcuts.clear();
+      alertSources.close();
       reader.clear();
       youtube.close();
       await backend.close();

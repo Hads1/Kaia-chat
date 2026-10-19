@@ -55,6 +55,8 @@
     position = duration ? Math.min(position, duration) : position;
     const title = state.titulo || fallback?.titulo || 'SR · nenhuma música';
     el('chat-sr-title').textContent = title;
+    el('chat-sr-requester').textContent =
+      state.titulo && state.user ? 'Solicitado por ' + state.user : '';
     el('chat-sr-status').textContent =
       (state.mutado ? 'SR no mudo · ative o som na aba SR. ' : '') +
       (state.erro ||

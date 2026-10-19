@@ -2,9 +2,9 @@ window.selectKaiaTab = (name) => {
   document.body.classList.toggle('widget-tab', name === 'widget');
   document.body.classList.toggle(
     'feature-tab',
-    ['reader', 'sr'].includes(name),
+    ['reader', 'sr', 'alerts'].includes(name),
   );
-  for (const tab of ['chat', 'widget', 'reader', 'sr']) {
+  for (const tab of ['chat', 'widget', 'reader', 'sr', 'alerts']) {
     document
       .getElementById('tab-' + tab)
       ?.setAttribute('aria-pressed', String(tab === name));

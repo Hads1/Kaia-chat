@@ -1,5 +1,21 @@
 # Kaia Chat
 
+CORREÇÃO LOCAL 0.10.1 — MONITOR DE ALERTAS
+A leitura não aguarda mais o fim das animações: usa amostragem periódica e observação com espera limitada. Procura texto também em iframes acessíveis do mesmo domínio e shadow roots abertos. O preset Streamlabs inclui #alert-text e migra o seletor padrão antigo automaticamente; seletores personalizados são preservados.
+Salve as fontes e clique Abrir prévia desta fonte. Dispare um alerta de teste no painel Streamlabs e compare o que aparece nessa prévia. O status informa se encontrou elementos pelo seletor e se há iframe de outro domínio sem acesso. Sem nenhum alerta recebido, o botão de repetir fica desativado e não aparece mais uma mensagem técnica de IPC.
+A correção passou em widget local com animação contínua e alerta em iframe acessível. Recebimento do seu URL privado real ainda precisa ser validado com um alerta novo. Não publique esta versão antes do teste local.
+
+
+TESTE LOCAL 0.10.0 — ATALHOS, FILAS E ALERTAS
+Feche a versão anterior antes de abrir esta. O SR tem atalhos globais editáveis, pedidos e playlist de fundo separados, limites próprios, exclusão e ordem manual. Faixas pedidas por !sr são as próximas após terminar a atual; não interrompem a música em andamento.
+Na aba Leitor, selecione e salve a saída privada para voz, sons do chat e avisos de pedidos/alertas. A música usa a saída escolhida no SR. Configure no OBS a captura da saída/processo do SR; capturar o áudio inteiro do Windows também captura os avisos privados.
+Na aba Alertas, adicione várias fontes Streamlabs/StreamElements/personalizadas com URLs privados de widget e seletor CSS do texto. Widgets ficam sem som. Apenas mudanças futuras de texto HTML acessível são reconhecidas. Imagens, canvas e iframes de outro domínio não têm leitura garantida; esta versão não faz OCR. Dispare um alerta de teste no serviço para validar sua fonte real. A fonte pode ler com o leitor normal desligado, desde que haja saída salva.
+O último alerta aparece no chat e na aba Alertas. O solicitante da música aparece nos players do aplicativo, mas é removido do JSON/visualização do HUD por URL. Spotify só substitui o SR quando não houver faixa atual válida do SR.
+Uma faixa inteira no topo serve para arrastar/encaixar a janela. Campos/painéis têm rolagem em janelas pequenas. Ctrl+Shift+F9 continua restaurando os controles.
+Atalhos: na aba SR, clique no campo e pressione a combinação, ou cole um acelerador Electron (Ctrl+Alt+P, Ctrl+Alt+Right, MediaPlayPause). Salvar detecta conflitos sem tomar atalhos de outro programa. F9/F10 com Ctrl+Shift são reservados.
+Importação de playlist passou para segundo plano, e a consulta de estado não aguarda o bloqueio do player. Os erros de comandos indicam qual operação demorou; os demais controles permanecem disponíveis.
+
+
 TESTE LOCAL 0.9.6 — CONTINUIDADE DO SR E LEITURA RECENTE
 O SR detecta encerramento antes da duração prevista, renova o link e tenta retomar do mesmo ponto até três vezes; se falhar, preserva música e posição e mostra o erro. A saída selecionada reconecta em falhas HTTP/rede. A barra usa amostras efetivamente enviadas à saída.
 No Leitor, configure Atraso máximo (padrão 15 segundos), Máximo na fila (10) e Caracteres por fala (300). Mensagens antigas são puladas somente na voz; o chat e o TXT seguem completos. O intervalo é mínimo entre inícios, sem pausa extra após uma fala longa. Geração de voz tem limite de 8 segundos para evitar prender a fila.
@@ -59,3 +75,15 @@ O aplicativo precisa continuar aberto no mesmo computador do OBS. Ativar o modo 
 
 TESTE 0.9.4 — SR E LIMPEZA DE ÁUDIO
 Corrige travamento no carregamento nativo do áudio. Na aba SR, selecione saída e volume e use Testar som do SR. O botão de mudo informa o estado real. Se o YouTube exigir login, Conectar YouTube > entrar na janela dedicada > Testar acesso. Os áudios temporários de fala são apagados após uso e no fechamento, com nova limpeza na inicialização do motor após interrupção. Músicas são transmitidas sem download permanente. Publicação aguarda teste e OK.
+
+CORREÇÃO LOCAL 0.10.2 — VOZ DOS PEDIDOS E ALERTAS
+Pedidos resolvidos anunciam solicitante e título na saída privada do Leitor. Alertas reconhecidos anunciam fonte e texto. Esses avisos têm prioridade sobre o chat, prazo próprio de 120 segundos e uma nova tentativa em caso de falha. Funcionam mesmo com a leitura normal desligada, desde que a saída do Leitor esteja salva.
+Nas abas SR e Alertas, use os novos botões de teste de voz e acompanhe o estado do aviso. O SR permite repetir o último pedido recebido nesta sessão. A leitura do alerta depende de ele aparecer em Último alerta recebido; o teste de voz não comprova a recepção do widget externo.
+O processo de voz não compartilha mais a entrada de controle com o FFmpeg e encerra após reproduzir o arquivo. O teste real de síntese e reprodução concluiu com zero arquivos de áudio temporários restantes. Confirme a audição no seu headset antes de autorizar publicação.
+
+SINCRONIZAÇÃO LOCAL 0.10.3 — AGRADECER APÓS O ALERTA
+Na aba Alertas, cada fonte tem Duração do alerta em segundos. Com 0, o Kaia aguarda o texto desaparecer (inclusive por transparência do contêiner) e os elementos de áudio/vídeo terminarem. Se o widget mantém o texto na página ou usa Web Audio não acessível, informe a duração que configurou no serviço (por exemplo, 5 ou 10 segundos). O prazo começa ao identificar o texto do novo alerta; mídia HTML ainda em reprodução adia a fala mesmo após esse prazo.
+O conteúdo falado vem do texto acessível do widget, preservando nome e mensagem. Não há reconhecimento de fala do áudio nem OCR nesta versão. O monitor permanece mudo para não duplicar o som do OBS. Alertas em canvas, imagens ou iframe de outro domínio podem exigir outra integração.
+Testado em Electron com widget local: texto ocultado em 1,5 segundo e áudio de 2 segundos; aviso liberado apenas após o término do áudio. Casos de 5/10 segundos e prevenção de repetição passaram nos testes automatizados. O teste real do Streamlabs deve ser confirmado separadamente.
+
+A revisão 0.10.3 também monitora frames incorporados por meio da API de frames do Electron, sem habilitar Node no widget nem desativar a segurança do navegador. O teste de iframe de outra origem (servidor local em outra porta) confirmou texto, término do áudio e emissão única. O seletor ainda precisa corresponder ao texto real da fonte.
