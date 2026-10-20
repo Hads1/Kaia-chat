@@ -1,0 +1,56 @@
+name: Publish approved portable 0.11.3
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: publish-portable-0.11.3
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Assemble, verify and publish the approved ZIP
+        shell: python
+        run: |
+          import hashlib, json, subprocess
+          from pathlib import Path
+          REPO = "Hads1/Kaia-chat"
+          NAME = "KaiaChat-0.11.3-Windows-x64.zip"
+          SHA = "6770a9620313aea8250ad68d61ae93da1183a55280b36238784a25eda4249dfb"
+          SIZE = 395993962
+          def api(route, *options):
+              return json.loads(subprocess.check_output(["gh", "api", route, *options]))
+          releases = api(f"repos/{REPO}/releases?per_page=100")
+          matches = [r for r in releases if r["name"] == "Kaia Chat 0.11.3 — Playlists salvas, Spotify opcional e janela ajustável"]
+          if len(matches) != 1:
+              raise RuntimeError("Expected exactly one prepared release")
+          release = matches[0]
+          route = f"repos/{REPO}/releases/{release['id']}"
+          assets = api(route + "/assets?per_page=100")
+          existing = [a for a in assets if a["name"] == NAME]
+          if existing:
+              asset = existing[0]
+              if asset["size"] != SIZE or asset.get("digest") != "sha256:" + SHA:
+                  raise RuntimeError("Existing ZIP differs from the approved artifact")
+          else:
+              parts = {a["name"]: a for a in assets if a["name"].startswith(NAME + ".part")}
+              expected = [NAME + f".part{i:03d}" for i in range(48)]
+              if sorted(parts) != expected or sum(a["size"] for a in parts.values()) != SIZE:
+                  raise RuntimeError("Upload all 48 transport parts before running")
+              with Path(NAME).open("wb") as output:
+                  for part in expected:
+                      subprocess.run(["gh", "api", parts[part]["url"], "-H", "Accept: application/octet-stream"], stdout=output, check=True)
+              if Path(NAME).stat().st_size != SIZE or hashlib.file_digest(Path(NAME).open("rb"), "sha256").hexdigest() != SHA:
+                  raise RuntimeError("ZIP failed the approved SHA-256 check")
+              upload = release["upload_url"].split("{")[0] + "?name=" + NAME
+              asset = api(upload, "--method", "POST", "--input", NAME, "-H", "Content-Type: application/zip")
+              if asset["size"] != SIZE or asset.get("digest") != "sha256:" + SHA:
+                  raise RuntimeError("Uploaded ZIP verification failed")
+          for part in [a for a in assets if a["name"].startswith(NAME + ".part")]:
+              subprocess.run(["gh", "api", f"repos/{REPO}/releases/assets/{part['id']}", "--method", "DELETE"], check=True)
+          published = api(route, "--method", "PATCH", "-f", "tag_name=v0.11.3", "-f", "target_commitish=762ee3ba3a96c607ddeabec3f760b16e7ab47ac5", "-F", "draft=false", "-F", "prerelease=false", "-f", "make_latest=true")
+          print("Published verified complete ZIP:", published["html_url"])
