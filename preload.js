@@ -36,6 +36,7 @@ contextBridge.exposeInMainWorld('kaia', {
     if (
       [
         'message',
+        'fonts',
         'language',
         'media-status',
         'spotify-state',

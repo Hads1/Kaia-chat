@@ -1,11 +1,16 @@
 """Routing regression tests: no real devices, music, or external requests."""
-import sys,types,unittest,threading
+import sys,types,unittest,threading,tempfile
 from pathlib import Path
 from unittest.mock import Mock,patch
 sys.path.insert(0,str(Path(__file__).resolve().parent.parent/'vendor/sr'))
 import sr_player,audio_out
 
 class AudioRouting(unittest.TestCase):
+    def setUp(self):
+        folder=tempfile.TemporaryDirectory();self.addCleanup(folder.cleanup)
+        for target,attribute,value in [(sr_player,'PASTA',Path(folder.name)),(audio_out,'PASTA',Path(folder.name)),(audio_out,'LAST_ERR','')]:
+            context=patch.object(target,attribute,value);context.start();self.addCleanup(context.stop)
+        context=patch.dict(sr_player._STREAM_STATUS,{'erro':'','pausa_ate':0});context.start();self.addCleanup(context.stop)
     def player(self):
         player=object.__new__(sr_player.SongRequest)
         player._kill=Mock();player.atual=None;player.mutado=False
@@ -55,7 +60,7 @@ class AudioRouting(unittest.TestCase):
         player=self.player();player._lock=threading.RLock();player._stop=False;player.paused=False
         player.atual={'id':'fixture1234','titulo':'Faixa','dur':duration,'stream':'https://old.googlevideo.com/audio'}
         player.proc=Mock();player.proc.played_seconds=position;player.proc.poll.return_value=code
-        player.acc=0;player.t0=0;player._spawn=Mock();player.erro=''
+        player.acc=0;player.t0=0;player._spawn=Mock(side_effect=lambda *args,**kwargs:setattr(player,'proc',Mock()));player.erro=''
         def kill():player.proc=None
         player._kill.side_effect=kill
         return player
@@ -73,10 +78,38 @@ class AudioRouting(unittest.TestCase):
         with patch.object(sr_player.threading,'Thread') as worker:
             self.assertFalse(player._recover_interruption());worker.assert_not_called()
 
-    def test_repeated_failure_preserves_track_and_position(self):
+    def test_stalled_live_worker_renews_at_last_played_sample(self):
+        player=self.interrupted_player(position=12,code=None)
+        def thread(target,**kw):return types.SimpleNamespace(start=target)
+        with patch.object(sr_player.threading,'Thread',side_effect=thread),patch.object(sr_player,'_url_stream',return_value='https://fresh.googlevideo.com/audio'):
+            self.assertTrue(player._recover_interruption(stalled=True))
+        player._spawn.assert_called_once_with('https://fresh.googlevideo.com/audio',ss=12)
+        self.assertFalse(player.paused)
+
+    def test_default_player_disables_video_and_limits_network_wait(self):
+        with patch.object(audio_out,'player_exe',return_value='ffplay.exe'),patch.object(audio_out,'_popen') as launch:
+            audio_out._ffplay('https://fixture.invalid/audio',50,0,Path('unused.err'))
+        args=launch.call_args.args[0]
+        self.assertIn('-vn',args);self.assertIn('-nodisp',args)
+        self.assertEqual(args[args.index('-rw_timeout')+1],'15000000')
+
+    def test_volume_and_mute_do_not_restart_or_seek_playback(self):
+        p=self.interrupted_player(position=12);original=p.proc;p.volume=80;p.mutado=False
+        p.set_volume(27);original.set_volume.assert_called_with(27)
+        self.assertIs(p.proc,original);self.assertEqual(p.acc,0)
+        p.mute_toggle();original.set_volume.assert_called_with(0)
+        p.mute_toggle();original.set_volume.assert_called_with(27)
+        p._spawn.assert_not_called();p._kill.assert_not_called()
+
+    def test_default_sr_uses_controllable_pcm_output(self):
+        with patch.object(audio_out,'achar_saida',return_value=''),patch.object(audio_out,'_play_explicit',return_value='pcm') as pcm,patch.object(audio_out,'_ffplay') as fallback:
+            self.assertEqual(audio_out.spawn('https://fixture.invalid/audio',volume=20,papel='sr'),'pcm')
+        self.assertIsNone(pcm.call_args.args[1]);fallback.assert_not_called()
+
+    def test_repeated_failure_logs_and_releases_queue(self):
         player=self.interrupted_player();player.atual['_recoveries']=3
         self.assertTrue(player._recover_interruption())
-        self.assertTrue(player.paused);self.assertEqual(player.acc,85);self.assertIsNotNone(player.atual)
+        self.assertFalse(player.paused);self.assertEqual(player.acc,0);self.assertIsNone(player.atual)
         player._spawn.assert_not_called()
 
     def test_stop_while_resolving_prevents_unwanted_restart(self):

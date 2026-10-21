@@ -1,5 +1,15 @@
 # Kaia Chat
 
+**Novidade 0.11.8:** SR, leitor e som de mensagem usam processos irmãos distintos para captura de áudio por processo. Todos podem sair no mesmo headset. Inclui volume deslizante em tempo real e melhorias do SR. Veja [configuração e verificação de áudio no OBS](docs/AUDIO-OBS.md).
+
+**Novidade 0.11.7:** volume do SR por barra deslizante, aplicado durante o arraste sem reiniciar a faixa. Mudo também atua no áudio em execução. O SR usa a saída PCM controlável tanto no dispositivo escolhido quanto na saída padrão; leitor e alertas mantêm seus controles próprios.
+
+**Novidade 0.11.6:** monitor de áudio sem progresso na saída PCM, preservação da ordem enquanto a primeira faixa é preparada e vídeo explicitamente desativado no player de áudio. [Análise e limites da comparação com o Chatbot](docs/SR-COMPARACAO.md).
+
+**Novidade 0.11.5:** diagnóstico do SR com motivo por faixa e exportação do log, renovação de links vencidos, retomada de áudio interrompido e avanço após falhas de reprodução. Vídeos privados não colocam a playlist inteira em espera. Redução de atualizações repetidas da fila, gravações em disco e processamento visual. Veja [diagnóstico e desempenho](docs/SR-DIAGNOSTICO.md).
+
+**Novidade 0.11.4:** playlists sem teto fixo de 60/500 músicas. Em **Quantidade de músicas na playlist (0 = todas)**, use `0` para importar todas ou digite a quantidade desejada, como `9999`. **Adicionar playlist** salva e aplica essa quantidade automaticamente; **Salvar SR** também a salva. O antigo padrão de 60 passa a todas. Não há corte de 15 minutos para faixas da playlist de fundo; músicas indisponíveis ou já presentes continuam sendo identificadas. A recuperação de playlists salvas também não tem teto de quantidade. O sistema prepara poucas faixas por vez e mostra a lista em páginas de 100, preservando contagem e organização da lista inteira. Foi removida a mensagem de importação duplicada.
+
 **Novidade 0.11.3:** na playlist de fundo do SR, use **Salvar playlist** e **Recuperar última playlist**. O salvamento inclui a faixa de fundo atual e as faixas aguardando, na ordem configurada. A recuperação preserva a música em execução e os pedidos do chat e substitui a playlist aguardando, sem repetir a faixa de fundo que já estiver tocando. O último salvamento fica neste computador entre sessões, somente com metadados; nenhum áudio é armazenado. Se o limite atual for menor que a playlist salva, aumente-o antes de recuperar. Salvar uma lista vazia não apaga o último salvamento.
 
 **Novidade 0.11.2:** a opção **Exibir Spotify no player e no widget** ativa ou desativa o monitor do Spotify. Desmarcada por padrão, mantém o widget exclusivo para o SR. A escolha é salva no computador, preserva a autorização e não controla a reprodução no aplicativo externo do Spotify. Os pedidos do SR continuam tendo prioridade.

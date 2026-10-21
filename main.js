@@ -9,6 +9,7 @@ const {
   clipboard,
   screen,
 } = require('electron');
+app.disableHardwareAcceleration();
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
@@ -30,7 +31,7 @@ let media;
 let displayMode;
 let widgetWindow,
   collapsed = false;
-const { execFileSync } = require('child_process');
+const { execFile } = require('child_process');
 let availableFonts = [
   'Segoe UI',
   'Arial',
@@ -41,21 +42,40 @@ let availableFonts = [
   'Trebuchet MS',
   'Times New Roman',
 ];
-try {
-  const found = JSON.parse(
-    execFileSync(
-      'powershell.exe',
-      [
-        '-NoProfile',
-        '-Command',
-        'Add-Type -AssemblyName System.Drawing; @((New-Object System.Drawing.Text.InstalledFontCollection).Families | ForEach-Object Name | Sort-Object -Unique) | ConvertTo-Json -Compress',
-      ],
-      { encoding: 'utf8', windowsHide: true, timeout: 15000 },
-    ),
+function refreshFonts() {
+  const file = path.join(app.getPath('userData'), 'fonts-cache.json');
+  try {
+    const cached = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (Array.isArray(cached.fonts))
+      availableFonts = [
+        ...new Set([...availableFonts, ...cached.fonts]),
+      ].sort();
+    if (Date.now() - Number(cached.at) < 86400000) return;
+  } catch {}
+  execFile(
+    'powershell.exe',
+    [
+      '-NoProfile',
+      '-Command',
+      'Add-Type -AssemblyName System.Drawing; @((New-Object System.Drawing.Text.InstalledFontCollection).Families | ForEach-Object Name | Sort-Object -Unique) | ConvertTo-Json -Compress',
+    ],
+    { encoding: 'utf8', windowsHide: true, timeout: 15000 },
+    (error, stdout) => {
+      if (error) return;
+      try {
+        const found = JSON.parse(stdout);
+        if (!Array.isArray(found)) return;
+        availableFonts = [...new Set([...availableFonts, ...found])].sort();
+        fs.mkdirSync(path.dirname(file), { recursive: true });
+        fs.writeFileSync(
+          file,
+          JSON.stringify({ at: Date.now(), fonts: availableFonts }),
+        );
+        emit('fonts', availableFonts);
+      } catch {}
+    },
   );
-  if (Array.isArray(found))
-    availableFonts = [...new Set([...availableFonts, ...found])].sort();
-} catch {}
+}
 app.setName('Kaia Chat');
 const smoke = process.argv.includes('--smoke-test');
 let win,
@@ -172,6 +192,7 @@ function emit(type, data) {
     );
 }
 app.whenReady().then(async () => {
+  refreshFonts();
   if (!smoke) {
     try {
       const s = JSON.parse(fs.readFileSync(config(), 'utf8'));

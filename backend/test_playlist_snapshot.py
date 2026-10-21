@@ -45,8 +45,8 @@ class PlaylistTests(unittest.TestCase):
             with self.assertRaises(ValueError):save_playlist(p,target)
             self.assertEqual(target.read_bytes(),saved)
             p.fila=[track('keep','sr')];p.playlist_limit=1
-            with self.assertRaises(ValueError):restore_playlist(p,target)
-            self.assertEqual(p.fila[0]['titulo'],'keep')
+            restore_playlist(p,target)
+            self.assertEqual([x['titulo'] for x in p.fila],['keep','A','B'])
             target.write_text('{"version":1,"tracks":[{}]}')
             with self.assertRaises(ValueError):restore_playlist(p,target)
             self.assertEqual(p.fila[0]['titulo'],'keep')

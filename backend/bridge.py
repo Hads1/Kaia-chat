@@ -45,7 +45,12 @@ def command(action,args):
         if not PLAYER:return {'titulo':'','fila':[],'historico':[],'paused':True,'volume':80,'playlist_job':dict(PLAYLIST_JOB)}
         lock=getattr(PLAYER,'_lock',None)
         if lock and not lock.acquire(timeout=.05):return {**LAST_STATE,'busy':True,'playlist_job':dict(PLAYLIST_JOB)}
-        try:LAST_STATE=PLAYER.estado();return {**LAST_STATE,'playlist_job':dict(PLAYLIST_JOB)}
+        try:
+            LAST_STATE=PLAYER.estado()
+            result={**LAST_STATE,'playlist_job':dict(PLAYLIST_JOB)}
+            if isinstance(args,list) and args and args[0]==result.get('queue_revision'):
+                for key in ('fila','fila_voz','fila_sr','fila_pl'):result.pop(key,None)
+            return result
         finally:
             if lock:lock.release()
     if action=='adicionar_playlist':

@@ -4,14 +4,17 @@ from pathlib import Path
 BASE=Path(__import__('os').environ.get('KAIA_MEDIA_DATA', str(Path(__file__).resolve().parent)))
 CONFIG=BASE/'sr_visual_config.json'
 STOP=threading.Event();THREAD=None
-_CFG=None;_STAMP=None
+_CFG=None;_STAMP=None;_CHECKED=0
 def config():
-    global _CFG,_STAMP
+    global _CFG,_STAMP,_CHECKED
+    now=time.monotonic()
+    if _CFG is not None and now-_CHECKED<1:return dict(_CFG)
+    _CHECKED=now
     try:
         stamp=CONFIG.stat().st_mtime_ns
         if _CFG is None or stamp!=_STAMP:_CFG=json.loads(CONFIG.read_text(encoding='utf-8'));_STAMP=stamp
         return dict(_CFG)
-    except (OSError,ValueError):return {'enabled':True,'device':'Alto-falantes (3- Logitech G533 Gaming Headset)'}
+    except (OSError,ValueError):return {'enabled':False,'device':''}
 def salvar(**changes):
     d=config();d.update(changes);tmp=CONFIG.with_suffix('.tmp');tmp.write_text(json.dumps(d,ensure_ascii=False,indent=2),encoding='utf-8');tmp.replace(CONFIG)
 def saidas():

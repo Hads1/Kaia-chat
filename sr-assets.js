@@ -3,6 +3,7 @@ const path = require('node:path');
 function createSRRoutes({ directory, backend, getLanguage = () => 'pt-BR' }) {
   const assets = path.join(__dirname, 'vendor', 'sr', 'avatar');
   const files = new Set(fs.readdirSync(assets));
+  let visualDemandAt = 0;
   return async (req, res, file) => {
     if (file === 'api/ui-language' && req.method === 'GET') {
       res.setHeader('Content-Type', 'application/json');
@@ -47,6 +48,14 @@ function createSRRoutes({ directory, backend, getLanguage = () => 'pt-BR' }) {
       res.writeHead(404);
       res.end();
       return;
+    }
+    if (file === 'sr_audio_visual.json' && Date.now() - visualDemandAt > 5000) {
+      visualDemandAt = Date.now();
+      const lease = path.join(directory, 'avatar', 'visual-demand.json');
+      try {
+        fs.mkdirSync(path.dirname(lease), { recursive: true });
+        fs.writeFileSync(lease, JSON.stringify({ at: Date.now() / 1000 }));
+      } catch {}
     }
     const source = file.endsWith('.json')
       ? path.join(directory, 'avatar', file)

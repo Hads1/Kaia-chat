@@ -27,7 +27,7 @@ def restore_playlist(player, destination):
         raise ValueError('Nenhuma playlist salva neste computador.')
     data = json.loads(target.read_text(encoding='utf-8'))
     rows = data.get('tracks')
-    if data.get('version') != 1 or not isinstance(rows, list) or not rows or len(rows) > 1000:
+    if data.get('version') != 1 or not isinstance(rows, list) or not rows:
         raise ValueError('Playlist salva inválida.')
     items = []
     for row in rows:
@@ -43,10 +43,11 @@ def restore_playlist(player, destination):
         current = player.atual if player.atual and player._fonte_de(player.atual) == 'playlist' else None
         if current:
             items = [x for x in items if x['q'] != current.get('q')]
-        if len(items) > player.playlist_limit:
-            raise ValueError('A playlist salva ultrapassa o limite atual. Aumente o limite antes de recuperar.')
         player.fila = [x for x in player.fila if player._fonte_de(x) != 'playlist'] + items
         player.shuffle_pl = False
-    for item in items:
-        threading.Thread(target=player._resolver, args=(item,), daemon=True).start()
+    if hasattr(player, '_prefetch_playlist'):
+        player._prefetch_playlist()
+    else:
+        for item in items:
+            threading.Thread(target=player._resolver, args=(item,), daemon=True).start()
     return 'Playlist recuperada.'

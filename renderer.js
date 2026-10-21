@@ -288,3 +288,10 @@ window.kaia.on('remove', (s) => {
       row.remove();
     }
 });
+
+window.kaia.on('fonts', (names) => {
+  const selector = document.getElementById('fontFamily');
+  const existing = new Set([...selector.options].map((option) => option.value));
+  for (const name of names)
+    if (!existing.has(name)) selector.add(new Option(name, name));
+});

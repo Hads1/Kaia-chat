@@ -31,6 +31,12 @@ class Meter:
         return {'quando':time.time(),'energy':min(1,rms*5),'beat':bool(beat),'source':self.source,'bands':bands,'frequency_edges':[float(x) for x in np.geomspace(25,16000,17)]}
     def publish(self,pcm):
         if self.source=='sr_pcm':
+            now=time.monotonic()
+            if now-getattr(self,'_demand_checked',0)>1:
+                self._demand_checked=now
+                try:self._demand_until=float(json.loads((FILE.parent/'visual-demand.json').read_text(encoding='utf-8'))['at'])+15
+                except (OSError,ValueError,KeyError):self._demand_until=0
+            if time.time()>getattr(self,'_demand_until',0):return
             from sr_loopback import config
             if config().get('enabled'):return
         data=self.sample(pcm)

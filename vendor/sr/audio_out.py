@@ -17,6 +17,7 @@ from pathlib import Path
 
 PASTA = Path(__import__('os').environ.get('KAIA_MEDIA_DATA', str(Path(__file__).resolve().parent)))
 LAST_ERR = ""
+LAST_ROLE = "sr"
 
 
 def _cf():
@@ -223,13 +224,19 @@ def _popen(cmd, env=None, err_path=None, stdout=None):
 class PlayerProc:
     """Parece um Popen: poll/terminate/kill/wait."""
 
-    def __init__(self, sub=None, thread=None, stop=None, progress=None, result=None):
+    def __init__(self, sub=None, thread=None, stop=None, progress=None, result=None, gain=None):
         self._sub = sub
         self._th = thread
         self._stop = stop or threading.Event()
         self._ret = None
         self._progress = progress
         self._result = result
+        self._gain = gain
+
+    def set_volume(self, volume):
+        if self._gain is None:return False
+        self._gain[0]=max(0.0,min(1.0,float(volume)/100))
+        return True
 
     @property
     def played_seconds(self):
@@ -291,6 +298,7 @@ def _ffplay(arquivo: str, volume: int, ss: float, err_path: Path, papel: str = "
         cmd = [
             fp,
             "-nodisp",
+            "-vn",
             "-autoexit",
             "-loglevel",
             "error",
@@ -298,6 +306,10 @@ def _ffplay(arquivo: str, volume: int, ss: float, err_path: Path, papel: str = "
             "-volume",
             str(volume),
         ]
+        if str(arquivo).startswith(('http://','https://')):
+            cmd += ['-reconnect','1','-reconnect_streamed','1',
+                    '-reconnect_on_network_error','1','-reconnect_on_http_error','408,429,5xx',
+                    '-reconnect_delay_max','4','-reconnect_max_retries','3','-rw_timeout','15000000']
         if ss >= 0.25:
             cmd += ["-ss", f"{ss:.2f}"]
         cmd += ["-i", arquivo]
@@ -352,6 +364,7 @@ def _play_sd(arquivo: str, device_idx: int, volume: int, ss: float, err_path: Pa
     ready = threading.Event()
     opened = [False]
     progress = [0.0]
+    gain = [max(0.0, min(1.0, volume / 100.0))]
     result = [0]
     err_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -373,7 +386,6 @@ def _play_sd(arquivo: str, device_idx: int, volume: int, ss: float, err_path: Pa
                 stderr=errf,
             )
             holder[0] = sub
-            gain = max(0.0, min(1.0, volume / 100.0))
             stream = sd.OutputStream(
                 samplerate=48000,
                 channels=2,
@@ -393,7 +405,7 @@ def _play_sd(arquivo: str, device_idx: int, volume: int, ss: float, err_path: Pa
                     arr = arr[:-1]
                 if arr.size == 0:
                     break
-                playing=(arr.reshape(-1, 2) * gain).copy()
+                playing=(arr.reshape(-1, 2) * gain[0]).copy()
                 stream.write(playing)
                 progress[0] += len(playing) / 48000
                 if meter:meter.publish(playing)
@@ -437,12 +449,13 @@ def _play_sd(arquivo: str, device_idx: int, volume: int, ss: float, err_path: Pa
     if not opened[0]:
         stop.set()
         return None
-    return PlayerProc(sub=holder[0], thread=th, stop=stop, progress=progress, result=result)
+    return PlayerProc(sub=holder[0], thread=th, stop=stop, progress=progress, result=result,gain=gain)
 
 
 def spawn(arquivo: str, saida: str = "", volume: int = 80, ss: float = 0.0, papel: str = "sr"):
     """Abre o player com nome próprio: kaia_sr.exe ou kaia_voz.exe."""
-    global LAST_ERR
+    global LAST_ERR,LAST_ROLE
+    LAST_ROLE=papel
     LAST_ERR = ""
     if not arquivo or (not Path(arquivo).is_file() and not str(arquivo).startswith(('https://','http://'))):
         LAST_ERR = "arquivo de áudio sumiu"
@@ -465,6 +478,10 @@ def spawn(arquivo: str, saida: str = "", volume: int = 80, ss: float = 0.0, pape
         LAST_ERR='Saída selecionada indisponível; áudio não enviado à saída padrão.'
         return None
 
+    # SR uses the same controllable audio-only pipeline on the default device.
+    if str(papel).lower() in ('sr','musica','song'):
+        return _play_explicit(arquivo,None,vol,ss,err_path,papel)
+
     # Sem saída explícita, o exe com nome próprio permite separar no mixer:
     #   kaia_voz.exe = voz da Kaia
     #   kaia_sr.exe  = música
@@ -478,6 +495,11 @@ def spawn(arquivo: str, saida: str = "", volume: int = 80, ss: float = 0.0, pape
 
 class DevicePlayerProc(PlayerProc):
     """Encerra o worker de voz de forma cooperativa, incluindo o decoder."""
+    def set_volume(self, volume):
+        if self._progress is None:return False
+        self._sub.stdin.write('volume '+str(max(0,min(100,int(volume))))+'\n')
+        self._sub.stdin.flush()
+        return True
     def terminate(self):
         self._stop.set()
         try:
@@ -494,25 +516,33 @@ class DevicePlayerProc(PlayerProc):
 
 def _play_explicit(arquivo, device_idx, volume, ss, err_path, papel):
     global LAST_ERR
-    if os.name != 'nt' or str(papel).lower() in ('sr', 'musica', 'song'):
+    if os.name != 'nt':
         return _play_sd(arquivo, device_idx, volume, ss, err_path,papel=papel)
-    # Python do SR permanece capturável no OBS; o TTS tem outro nome de processo.
-    target = Path(sys.executable).with_name('kaia_leitura.exe' if str(papel).lower()=='leitura' else 'kaia_tts.exe')
+    music=str(papel).lower() in ('sr','musica','song')
+    # Sibling processes ensure capture of SR does not include reader/chat children.
+    target = Path(sys.executable).with_name('kaia_musica.exe' if music else 'kaia_leitura.exe' if str(papel).lower()=='leitura' else 'kaia_tts.exe')
+    worker=Path(__file__).with_name('sr_audio_worker.py') if music else PASTA/'audio_device_worker.py'
     proc = None
     try:
         if not target.is_file():
             shutil.copy2(sys.executable, target)
         proc = subprocess.Popen(
-            [str(target), str(PASTA / 'audio_device_worker.py'), arquivo,
+            [str(target), str(worker), arquivo,
              str(device_idx), str(volume), str(ss), str(err_path)],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
             text=True, creationflags=_cf(), startupinfo=_si(),
         )
         ready = threading.Event()
         result = ['']
+        progress=[0.0] if music else None
         def read_status():
             result[0] = proc.stdout.readline().strip()
             ready.set()
+            if music:
+                for line in proc.stdout:
+                    if line.startswith('PROGRESS '):
+                        try:progress[0]=float(line[9:])
+                        except ValueError:pass
         threading.Thread(target=read_status, daemon=True).start()
         ready.wait(timeout=5)
         if result[0] != 'READY':
@@ -522,7 +552,7 @@ def _play_explicit(arquivo, device_idx, volume, ss, err_path, papel):
             except OSError:pass
             DevicePlayerProc(sub=proc).terminate()
             return None
-        return DevicePlayerProc(sub=proc)
+        return DevicePlayerProc(sub=proc,progress=progress)
     except Exception as exc:
         LAST_ERR = str(exc)
         if proc is not None:
@@ -530,13 +560,16 @@ def _play_explicit(arquivo, device_idx, volume, ss, err_path, papel):
         return None
 
 
-def ler_erro() -> str:
-    p = PASTA / "tmp_sr" / "_player.err"
-    try:
-        t = p.read_text(encoding="utf-8", errors="replace").strip()
-        return (t or LAST_ERR)[-280:]
-    except Exception:
-        return LAST_ERR
+def ler_erro(papel=None) -> str:
+    from sr_diagnostics import safe_error
+    papel=papel or LAST_ROLE
+    for name in (f'_player_{papel}.err','_player.err'):
+        p=PASTA/'tmp_sr'/name
+        try:
+            text=p.read_text(encoding='utf-8',errors='replace').strip()
+            if text:return safe_error(text)
+        except OSError:pass
+    return safe_error(LAST_ERR) if LAST_ERR else ''
 
 
 def tocar_bloqueado(arquivo: str, saida: str = "", volume: int = 80, parar=None, papel: str = "voz") -> str:

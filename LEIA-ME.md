@@ -1,5 +1,20 @@
 # Kaia Chat
 
+TRÊS ÁUDIOS — 0.11.8
+Música: kaia_musica.exe. Voz: kaia_leitura.exe. Som de mensagem: kaia_tts.exe. Eles podem usar o mesmo headset, com captura por processo separada no OBS. Capturar o áudio geral do desktop mistura os sons. Confira docs/AUDIO-OBS.md antes de configurar as fontes. Esta versão substitui a saída SR no processo principal por um worker próprio, preservando volume em tempo real.
+
+VOLUME EM TEMPO REAL — 0.11.7
+Arraste a barra Volume na aba SR / Spotify para ajustar a música enquanto ela toca, sem precisar clicar em Salvar SR. O ajuste e o mudo não reiniciam a música. Se o OBS capturava especificamente o processo kaia_sr.exe da saída padrão antiga, confira novamente a captura: a saída padrão agora usa o mesmo motor PCM da saída selecionada. Selecionar um dispositivo dedicado ao SR continua disponível.
+
+SR — 0.11.6
+A saída PCM detecta quando o áudio deixa de avançar por 25 segundos e tenta retomar. A ordem manual da playlist é respeitada enquanto a próxima música é preparada. O player padrão desativa explicitamente vídeo. Os registros e as correções 0.11.5 continuam disponíveis. Consulte docs/SR-COMPARACAO.md para o resultado e os limites da análise do Chatbot.
+
+SR E DESEMPENHO — 0.11.5
+Na aba SR / Spotify, abra Diagnóstico do SR para consultar falhas e exportar o log. Links de áudio vencidos são renovados. Interrupções têm até três tentativas de retomada; falhas persistentes são registradas e a fila continua. Bloqueios gerais do serviço e falhas no dispositivo de áudio são informados para correção. Nenhum programa consegue recuperar vídeos privados ou garantir disponibilidade do YouTube. Atualizações da interface e gravações repetidas foram reduzidas; o ZIP usa compressão máxima DEFLATE.
+
+PLAYLIST SEM TETO FIXO — 0.11.4
+Na quantidade de músicas da playlist, use 0 para todas ou digite um número como 9999. Adicionar playlist salva e aplica a quantidade escolhida. Salvar SR também salva essa preferência. Os tetos fixos de 60 e 500 faixas foram removidos. Recuperar a última playlist não corta músicas pela quantidade escolhida para novas importações. Listas grandes aparecem em páginas de 100 faixas, com posições referentes à lista inteira; nenhuma música é removida por causa da paginação. O preparo do áudio ocorre aos poucos. Faixas da playlist não são rejeitadas por ultrapassarem 15 minutos. Vídeos privados, removidos ou indisponíveis no serviço não podem ser recuperados pelo programa.
+
 PLAYLIST SALVA — 0.11.3
 Na playlist de fundo do SR, clique em Salvar playlist para guardar a lista atual e sua ordem neste computador. Recuperar última playlist restaura o último salvamento mesmo depois de fechar o programa. A recuperação substitui apenas a playlist aguardando, mantém a música atual e os pedidos do chat e desativa o aleatório para respeitar a ordem salva. Não salva arquivos de áudio. Se necessário, aumente o limite de músicas antes de recuperar. Salvar uma playlist vazia preserva o salvamento anterior.
 

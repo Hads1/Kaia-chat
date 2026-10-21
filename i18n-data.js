@@ -735,7 +735,13 @@
     "Recuperar última playlist": "Recuperar última playlist",
     "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.",
     "Playlist salva.": "Playlist salva.",
-    "Playlist recuperada.": "Playlist recuperada."
+    "Playlist recuperada.": "Playlist recuperada.",
+    "Quantidade de músicas na playlist (0 = todas)": "Quantidade de músicas na playlist (0 = todas)",
+    "Diagnóstico do SR": "Diagnóstico do SR",
+    "Exportar log do SR": "Exportar log do SR",
+    "Falhas e faixas puladas. Bloqueios de acesso e problemas na saída de áudio precisam de correção.": "Falhas e faixas puladas. Bloqueios de acesso e problemas na saída de áudio precisam de correção.",
+    "Log do SR exportado.": "Log do SR exportado.",
+    "Nenhum evento do SR registrado ainda.": "Nenhum evento do SR registrado ainda."
   },
   "en": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { border-radius: 0; } #tit { text-transform: uppercase; }",
@@ -1472,7 +1478,13 @@
     "Recuperar última playlist": "Restore last playlist",
     "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "Restoring replaces the waiting playlist and keeps the current track and chat requests.",
     "Playlist salva.": "Playlist saved.",
-    "Playlist recuperada.": "Playlist restored."
+    "Playlist recuperada.": "Playlist restored.",
+    "Quantidade de músicas na playlist (0 = todas)": "Playlist track count (0 = all)",
+    "Diagnóstico do SR": "SR diagnostics",
+    "Exportar log do SR": "Export SR log",
+    "Falhas e faixas puladas. Bloqueios de acesso e problemas na saída de áudio precisam de correção.": "Failures and skipped tracks. Access blocks and audio output problems require attention.",
+    "Log do SR exportado.": "SR log exported.",
+    "Nenhum evento do SR registrado ainda.": "No SR events recorded yet."
   },
   "es": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { radio-borde: 0; } #tit { transformación de texto: mayúscula; }",
@@ -2209,7 +2221,13 @@
     "Recuperar última playlist": "Recuperar última playlist",
     "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "La recuperación reemplaza la playlist en espera y conserva la canción actual y los pedidos del chat.",
     "Playlist salva.": "Playlist guardada.",
-    "Playlist recuperada.": "Playlist recuperada."
+    "Playlist recuperada.": "Playlist recuperada.",
+    "Quantidade de músicas na playlist (0 = todas)": "Cantidad de canciones (0 = todas)",
+    "Diagnóstico do SR": "Diagnóstico del SR",
+    "Exportar log do SR": "Exportar registro del SR",
+    "Falhas e faixas puladas. Bloqueios de acesso e problemas na saída de áudio precisam de correção.": "Fallos y pistas omitidas. Los bloqueos de acceso y problemas de salida de audio requieren corrección.",
+    "Log do SR exportado.": "Registro del SR exportado.",
+    "Nenhum evento do SR registrado ainda.": "Aún no hay eventos del SR registrados."
   },
   "fr": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { border-radius: 0; } #tit { text-transform : majuscule ; }",
@@ -2946,7 +2964,13 @@
     "Recuperar última playlist": "Restaurer la dernière playlist",
     "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "La restauration remplace la playlist en attente et conserve le morceau actuel et les demandes du chat.",
     "Playlist salva.": "Playlist enregistrée.",
-    "Playlist recuperada.": "Playlist restaurée."
+    "Playlist recuperada.": "Playlist restaurée.",
+    "Quantidade de músicas na playlist (0 = todas)": "Nombre de morceaux (0 = tous)",
+    "Diagnóstico do SR": "Diagnostic SR",
+    "Exportar log do SR": "Exporter le journal SR",
+    "Falhas e faixas puladas. Bloqueios de acesso e problemas na saída de áudio precisam de correção.": "Échecs et pistes ignorées. Les blocages d’accès et problèmes de sortie audio doivent être corrigés.",
+    "Log do SR exportado.": "Journal SR exporté.",
+    "Nenhum evento do SR registrado ainda.": "Aucun événement SR enregistré."
   },
   "de": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { Randradius: 0; } #tit { text-transform: Uppercase; }",
@@ -3683,7 +3707,13 @@
     "Recuperar última playlist": "Letzte Playlist wiederherstellen",
     "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "Die Wiederherstellung ersetzt die wartende Playlist und behält den aktuellen Titel und Chatwünsche.",
     "Playlist salva.": "Playlist gespeichert.",
-    "Playlist recuperada.": "Playlist wiederhergestellt."
+    "Playlist recuperada.": "Playlist wiederhergestellt.",
+    "Quantidade de músicas na playlist (0 = todas)": "Anzahl der Titel (0 = alle)",
+    "Diagnóstico do SR": "SR-Diagnose",
+    "Exportar log do SR": "SR-Protokoll exportieren",
+    "Falhas e faixas puladas. Bloqueios de acesso e problemas na saída de áudio precisam de correção.": "Fehler und übersprungene Titel. Zugriffssperren und Probleme mit der Audioausgabe müssen behoben werden.",
+    "Log do SR exportado.": "SR-Protokoll exportiert.",
+    "Nenhum evento do SR registrado ainda.": "Noch keine SR-Ereignisse aufgezeichnet."
   },
   "it": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { raggio-bordo: 0; } #tit { text-transform: maiuscolo; }",
@@ -4420,7 +4450,13 @@
     "Recuperar última playlist": "Ripristina ultima playlist",
     "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "Il ripristino sostituisce la playlist in attesa e mantiene il brano attuale e le richieste della chat.",
     "Playlist salva.": "Playlist salvata.",
-    "Playlist recuperada.": "Playlist ripristinata."
+    "Playlist recuperada.": "Playlist ripristinata.",
+    "Quantidade de músicas na playlist (0 = todas)": "Numero di brani (0 = tutti)",
+    "Diagnóstico do SR": "Diagnostica SR",
+    "Exportar log do SR": "Esporta registro SR",
+    "Falhas e faixas puladas. Bloqueios de acesso e problemas na saída de áudio precisam de correção.": "Errori e brani saltati. Blocchi di accesso e problemi di uscita audio richiedono correzione.",
+    "Log do SR exportado.": "Registro SR esportato.",
+    "Nenhum evento do SR registrado ainda.": "Nessun evento SR registrato."
   },
   "ru": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box {граница-радиус: 0; } #tit {текстовое преобразование: верхний регистр; }",
@@ -5157,7 +5193,13 @@
     "Recuperar última playlist": "Восстановить последний плейлист",
     "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "Восстановление заменяет ожидающий плейлист, сохраняя текущий трек и запросы чата.",
     "Playlist salva.": "Плейлист сохранён.",
-    "Playlist recuperada.": "Плейлист восстановлен."
+    "Playlist recuperada.": "Плейлист восстановлен.",
+    "Quantidade de músicas na playlist (0 = todas)": "Количество треков (0 = все)",
+    "Diagnóstico do SR": "Диагностика SR",
+    "Exportar log do SR": "Экспорт журнала SR",
+    "Falhas e faixas puladas. Bloqueios de acesso e problemas na saída de áudio precisam de correção.": "Ошибки и пропущенные треки. Блокировки доступа и проблемы аудиовыхода требуют исправления.",
+    "Log do SR exportado.": "Журнал SR экспортирован.",
+    "Nenhum evento do SR registrado ainda.": "События SR ещё не записаны."
   },
   "ar": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { نصف قطر الحدود: 0؛ } #tit { تحويل النص: أحرف كبيرة؛ }",
@@ -5894,7 +5936,13 @@
     "Recuperar última playlist": "استعادة آخر قائمة تشغيل",
     "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "تستبدل الاستعادة قائمة الانتظار وتحافظ على المقطع الحالي وطلبات الدردشة.",
     "Playlist salva.": "تم حفظ قائمة التشغيل.",
-    "Playlist recuperada.": "تمت استعادة قائمة التشغيل."
+    "Playlist recuperada.": "تمت استعادة قائمة التشغيل.",
+    "Quantidade de músicas na playlist (0 = todas)": "عدد المقاطع (0 = الكل)",
+    "Diagnóstico do SR": "تشخيص SR",
+    "Exportar log do SR": "تصدير سجل SR",
+    "Falhas e faixas puladas. Bloqueios de acesso e problemas na saída de áudio precisam de correção.": "الأخطاء والمقاطع المتخطاة. يجب معالجة حظر الوصول ومشكلات إخراج الصوت.",
+    "Log do SR exportado.": "تم تصدير سجل SR.",
+    "Nenhum evento do SR registrado ainda.": "لم تُسجل أحداث SR بعد."
   },
   "hi": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#बॉक्स { सीमा-त्रिज्या: 0; } #tit { टेक्स्ट-ट्रांसफ़ॉर्म: अपरकेस; }",
@@ -6631,7 +6679,13 @@
     "Recuperar última playlist": "पिछली प्लेलिस्ट पुनर्स्थापित करें",
     "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "पुनर्स्थापना प्रतीक्षारत प्लेलिस्ट को बदलती है और वर्तमान गाना व चैट अनुरोध रखती है।",
     "Playlist salva.": "प्लेलिस्ट सहेजी गई।",
-    "Playlist recuperada.": "प्लेलिस्ट पुनर्स्थापित की गई।"
+    "Playlist recuperada.": "प्लेलिस्ट पुनर्स्थापित की गई।",
+    "Quantidade de músicas na playlist (0 = todas)": "प्लेलिस्ट में गानों की संख्या (0 = सभी)",
+    "Diagnóstico do SR": "SR निदान",
+    "Exportar log do SR": "SR लॉग निर्यात करें",
+    "Falhas e faixas puladas. Bloqueios de acesso e problemas na saída de áudio precisam de correção.": "विफलताएँ और छोड़े गए गाने। पहुँच अवरोध और ऑडियो आउटपुट की समस्याओं को ठीक करना होगा।",
+    "Log do SR exportado.": "SR लॉग निर्यात किया गया।",
+    "Nenhum evento do SR registrado ainda.": "अभी कोई SR घटना दर्ज नहीं है।"
   },
   "bn": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#বক্স { সীমানা-ব্যাসার্ধ: 0; } #tit { টেক্সট-ট্রান্সফর্ম: বড় হাতের অক্ষর; }",
@@ -7368,7 +7422,13 @@
     "Recuperar última playlist": "শেষ প্লেলিস্ট পুনরুদ্ধার করুন",
     "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "পুনরুদ্ধার অপেক্ষমাণ প্লেলিস্ট বদলায় এবং বর্তমান গান ও চ্যাটের অনুরোধ রাখে।",
     "Playlist salva.": "প্লেলিস্ট সংরক্ষিত।",
-    "Playlist recuperada.": "প্লেলিস্ট পুনরুদ্ধার হয়েছে।"
+    "Playlist recuperada.": "প্লেলিস্ট পুনরুদ্ধার হয়েছে।",
+    "Quantidade de músicas na playlist (0 = todas)": "প্লেলিস্টের গানের সংখ্যা (0 = সব)",
+    "Diagnóstico do SR": "SR সমস্যা নির্ণয়",
+    "Exportar log do SR": "SR লগ রপ্তানি করুন",
+    "Falhas e faixas puladas. Bloqueios de acesso e problemas na saída de áudio precisam de correção.": "ব্যর্থতা ও বাদ পড়া গান। প্রবেশে বাধা ও অডিও আউটপুটের সমস্যা ঠিক করতে হবে।",
+    "Log do SR exportado.": "SR লগ রপ্তানি হয়েছে।",
+    "Nenhum evento do SR registrado ainda.": "এখনও কোনো SR ঘটনা রেকর্ড হয়নি।"
   },
   "id": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { radius batas: 0; } #tit { transformasi teks: huruf besar; }",
@@ -8105,7 +8165,13 @@
     "Recuperar última playlist": "Pulihkan playlist terakhir",
     "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "Pemulihan mengganti playlist yang menunggu dan mempertahankan lagu aktif serta permintaan chat.",
     "Playlist salva.": "Playlist disimpan.",
-    "Playlist recuperada.": "Playlist dipulihkan."
+    "Playlist recuperada.": "Playlist dipulihkan.",
+    "Quantidade de músicas na playlist (0 = todas)": "Jumlah lagu playlist (0 = semua)",
+    "Diagnóstico do SR": "Diagnostik SR",
+    "Exportar log do SR": "Ekspor log SR",
+    "Falhas e faixas puladas. Bloqueios de acesso e problemas na saída de áudio precisam de correção.": "Kegagalan dan lagu yang dilewati. Pemblokiran akses dan masalah keluaran audio perlu diperbaiki.",
+    "Log do SR exportado.": "Log SR diekspor.",
+    "Nenhum evento do SR registrado ainda.": "Belum ada peristiwa SR tercatat."
   },
   "ja": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { 境界半径: 0; } #tit {テキスト変換: 大文字; }",
@@ -8842,7 +8908,13 @@
     "Recuperar última playlist": "最後のプレイリストを復元",
     "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "復元すると待機中のプレイリストが置き換わります。再生中の曲とチャットのリクエストは保持されます。",
     "Playlist salva.": "プレイリストを保存しました。",
-    "Playlist recuperada.": "プレイリストを復元しました。"
+    "Playlist recuperada.": "プレイリストを復元しました。",
+    "Quantidade de músicas na playlist (0 = todas)": "プレイリストの曲数（0 = すべて）",
+    "Diagnóstico do SR": "SR診断",
+    "Exportar log do SR": "SRログをエクスポート",
+    "Falhas e faixas puladas. Bloqueios de acesso e problemas na saída de áudio precisam de correção.": "失敗とスキップされた曲。アクセス制限や音声出力の問題には対応が必要です。",
+    "Log do SR exportado.": "SRログをエクスポートしました。",
+    "Nenhum evento do SR registrado ainda.": "SRイベントはまだ記録されていません。"
   },
   "ko": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { 테두리 반경: 0; } #tit { 텍스트 변환: 대문자; }",
@@ -9579,7 +9651,13 @@
     "Recuperar última playlist": "마지막 재생목록 복원",
     "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "복원 시 대기 중인 재생목록을 교체하며 현재 곡과 채팅 요청은 유지합니다.",
     "Playlist salva.": "재생목록을 저장했습니다.",
-    "Playlist recuperada.": "재생목록을 복원했습니다."
+    "Playlist recuperada.": "재생목록을 복원했습니다.",
+    "Quantidade de músicas na playlist (0 = todas)": "재생목록 곡 수 (0 = 모두)",
+    "Diagnóstico do SR": "SR 진단",
+    "Exportar log do SR": "SR 로그 내보내기",
+    "Falhas e faixas puladas. Bloqueios de acesso e problemas na saída de áudio precisam de correção.": "실패 및 건너뛴 곡입니다. 접근 차단과 오디오 출력 문제는 해결이 필요합니다.",
+    "Log do SR exportado.": "SR 로그를 내보냈습니다.",
+    "Nenhum evento do SR registrado ainda.": "아직 기록된 SR 이벤트가 없습니다."
   },
   "zh-CN": {
     "#box { border-radius: 0; } #tit { text-transform: uppercase; }": "#box { 边框半径：0; } #tit { 文本转换：大写； }",
@@ -10316,6 +10394,12 @@
     "Recuperar última playlist": "恢复上次的播放列表",
     "A recuperação substitui a playlist aguardando e mantém a música atual e os pedidos do chat.": "恢复将替换等待中的播放列表，并保留当前歌曲和聊天点歌。",
     "Playlist salva.": "播放列表已保存。",
-    "Playlist recuperada.": "播放列表已恢复。"
+    "Playlist recuperada.": "播放列表已恢复。",
+    "Quantidade de músicas na playlist (0 = todas)": "播放列表歌曲数量（0 = 全部）",
+    "Diagnóstico do SR": "SR 诊断",
+    "Exportar log do SR": "导出 SR 日志",
+    "Falhas e faixas puladas. Bloqueios de acesso e problemas na saída de áudio precisam de correção.": "失败及跳过的歌曲。访问限制和音频输出问题需要处理。",
+    "Log do SR exportado.": "SR 日志已导出。",
+    "Nenhum evento do SR registrado ainda.": "尚未记录 SR 事件。"
   }
 };if(typeof module==='object')module.exports=data;else root.KaiaTranslations=data;})(typeof window==='object'?window:globalThis);

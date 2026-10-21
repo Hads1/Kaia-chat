@@ -21,6 +21,9 @@ __pycache__/
 *.pyc
 *.secrets
 *.enc
+vendor/sr/aprendizado/
+vendor/sr/tmp_sr/
+vendor/sr/tmp_audio/
 !backend/requirements.txt
 
 !vendor/**/requirements.txt

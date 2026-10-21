@@ -12,6 +12,8 @@ import uuid
 import unicodedata
 from pathlib import Path
 from types import SimpleNamespace
+from urllib.parse import urlsplit, parse_qs
+from sr_diagnostics import SRDiagnostics,classify_error,safe_error
 
 PASTA = Path(__import__('os').environ.get('KAIA_MEDIA_DATA', str(Path(__file__).resolve().parent)))
 TMP = PASTA / "tmp_sr"
@@ -46,7 +48,11 @@ def _si():
     return si
 
 
+_ACTIVE_RUNS=set()
+_ACTIVE_RUNS_LOCK=threading.Lock()
+
 def _run(cmd, timeout=60):
+    p=None
     try:
         p = subprocess.Popen(
             cmd,
@@ -56,6 +62,7 @@ def _run(cmd, timeout=60):
             creationflags=_cf(),
             startupinfo=_si(),
         )
+        with _ACTIVE_RUNS_LOCK:_ACTIVE_RUNS.add(p)
         try:
             out, err = p.communicate(timeout=timeout)
             return SimpleNamespace(returncode=p.returncode, stdout=out, stderr=err)
@@ -75,6 +82,9 @@ def _run(cmd, timeout=60):
             return SimpleNamespace(returncode=124, stdout=out or b"", stderr=err or b"timeout")
     except Exception as exc:
         return SimpleNamespace(returncode=1, stdout=b"", stderr=str(exc).encode("utf-8", "replace"))
+    finally:
+        if p is not None:
+            with _ACTIVE_RUNS_LOCK:_ACTIVE_RUNS.discard(p)
 
 
 def _dec(b) -> str:
@@ -148,7 +158,7 @@ def _yt_opcoes():
 
 def _yt_cmd():
     agora = time.time()
-    if _YTD_CACHE["cmd"] and agora - _YTD_CACHE["t"] < 8:
+    if _YTD_CACHE["cmd"] and agora - _YTD_CACHE["t"] < 3600:
         return list(_YTD_CACHE["cmd"])+_yt_opcoes()
     exe = ""  # Use the bundled Python module instead of a machine-wide executable.
     cmd = [exe] if exe else []
@@ -603,16 +613,19 @@ def _url_stream(vid: str) -> str:
     if r.returncode==0 and linhas:
         _STREAM_STATUS.update(erro='',pausa_ate=0)
         return linhas[-1]
-    error=_dec(r.stderr).lower()
+    raw_error=safe_error(_dec(r.stderr))
+    error=raw_error.lower()
     if '429' in error or 'too many requests' in error:
         _STREAM_STATUS.update(erro='YouTube limitou as requisições (HTTP 429). SR aguardando 10 minutos antes de tentar novamente.',pausa_ate=time.time()+600)
+    elif 'private video' in error or 'video unavailable' in error or 'removed' in error:
+        _STREAM_STATUS['erro']=raw_error
     elif 'not a bot' in error or 'confirm you' in error or 'sign in' in error:
         _STREAM_STATUS.update(erro='YouTube exige login para este acesso. Na aba SR, clique Conectar YouTube, faça login na sessão dedicada e depois Testar acesso.',pausa_ate=time.time()+600)
     elif 'javascript' in error or 'js runtime' in error:
         _STREAM_STATUS['erro']='Extrator do YouTube precisa de runtime JavaScript compatível. Atualize o SR e verifique Node.js 22 ou superior.'
     elif 'private video' in error or 'video unavailable' in error or 'removed' in error:
-        _STREAM_STATUS['erro']='Vídeo privado, removido ou indisponível; escolha outra faixa.'
-    else:_STREAM_STATUS['erro']='Falha ao obter áudio do YouTube. Verifique a conexão e atualize o extrator pelo SR.'
+        _STREAM_STATUS['erro']=raw_error
+    else:_STREAM_STATUS['erro']=raw_error or 'Falha ao obter áudio do YouTube sem detalhe do serviço.'
     return ''
 
 
@@ -771,7 +784,7 @@ class SongRequest:
         self.repeat = "off"
         self.shuffle_pl = False
         self.request_limit=80
-        self.playlist_limit=60
+        self.playlist_limit=0
         self.notifications=[]
         from spotify_agora import iniciar_monitor
         iniciar_monitor()
@@ -804,7 +817,8 @@ class SongRequest:
                     return "Já peguei esse pedido."
                 self._visto[chave] = agora
                 is_background=fonte=='playlist'
-                if sum((self._fonte_de(x)=='playlist')==is_background for x in self.fila) >= (self.playlist_limit if is_background else self.request_limit):
+                limit=self.playlist_limit if is_background else self.request_limit
+                if limit and sum((self._fonte_de(x)=='playlist')==is_background for x in self.fila) >= limit:
                     return "Fila cheia. Espera uma sair."
                 if any((x.get("q") or "").lower() == q.lower() for x in self.fila):
                     return "Essa já tá na fila."
@@ -849,7 +863,7 @@ class SongRequest:
                     "%(id)s\t%(title)s\t%(duration)s",
                     url,
                 ],
-                120,
+                1800,
             )
         except Exception as exc:
             self.erro = str(exc)
@@ -869,9 +883,8 @@ class SongRequest:
                 ja.add((self.atual.get("id") or "").lower())
         added = 0
         pulou = 0
-        itens = []
-        for ln in linhas:
-            if added >= self.playlist_limit:
+        for playlist_index,ln in enumerate(linhas,1):
+            if self.playlist_limit and added >= self.playlist_limit:
                 pulou += 1
                 continue
             partes = (ln.split("\t") + ["", "", "0"])[:3]
@@ -888,18 +901,13 @@ class SongRequest:
                 dur_i = int(float(dur)) if dur and dur.lower() not in {"na", "nan", "none"} else 0
             except Exception:
                 dur_i = 0
-            if dur_i and dur_i > MAX_SEG:
-                pulou += 1
-                continue
             with self._lock:
-                if sum(self._fonte_de(x)=='playlist' for x in self.fila) >= self.playlist_limit:
-                    pulou += 1
-                    continue
                 item = {
                     "key":uuid.uuid4().hex,
                     "user": user,
                     "q": q,
                     "id": vid,
+                    "playlist_index": playlist_index,
                     "titulo": titulo or vid,
                     "dur": dur_i,
                     "arquivo": "",
@@ -911,15 +919,61 @@ class SongRequest:
                 self.fila.append(item)
                 ja.add(vid.lower())
                 ja.add(q.lower())
-            itens.append(item)
             added += 1
-        for item in itens:
-            threading.Thread(target=self._resolver, args=(item,), daemon=True).start()
+        if r.returncode:
+            self._diagnostics().record('importacao_parcial',reason=_dec(r.stderr),code='extractor_partial')
+        self._diagnostics().record('importada',reason=f'{added} faixas adicionadas; {pulou} não adicionadas.')
+        self._prefetch_playlist()
         msg = f"Playlist de fundo: {added} faixas. !sr do chat fura a fila."
         if pulou:
-            msg += f"  ·  {pulou} puladas (cheia, repetida ou longa)"
-        self.erro = msg
+            msg += f"  ·  {pulou} não adicionadas (quantidade escolhida, repetida ou indisponível)"
+        if self.erro == "lendo playlist…": self.erro = ""
         return msg
+
+    def _diagnostics(self):
+        if not hasattr(self, '_sr_diagnostics'):self._sr_diagnostics=SRDiagnostics(PASTA/'aprendizado')
+        return self._sr_diagnostics
+
+    def _playlist_failure(self, item, error, current=False):
+        detail=classify_error(error)
+        item['erro']=detail['reason']
+        if detail['pause']:
+            _STREAM_STATUS['pausa_ate']=max(_STREAM_STATUS.get('pausa_ate',0),time.time()+30)
+            item['status']='fila';item['_scheduled']=False
+            self._diagnostics().record('aguardando_configuracao' if detail['code']=='audio_output' else 'aguardando_servico',item,detail['reason'],detail['code'])
+            if current:self.paused=True
+        else:
+            item['status']='skipped'
+            self._diagnostics().record('pulada',item,detail['reason'],detail['code'])
+            if current:
+                self._kill();self.atual=None;self.acc=0;self.paused=False
+        self.erro=detail['reason']
+        return detail
+
+    def _prefetch_playlist(self):
+        # Resolve only a small look-ahead, even when the playlist has 9999+ rows.
+        if time.time() < _STREAM_STATUS.get('pausa_ate',0):return
+        with self._lock:
+            pending = [x for x in self.fila if self._fonte_de(x) == 'playlist' and x.get('status') not in ('erro','skipped')][:3]
+            for item in pending:
+                if item.get('status') == 'fila' and not item.get('_scheduled'):
+                    item['_scheduled'] = True
+                    item['t0'] = time.time()
+                    threading.Thread(target=self._resolver, args=(item,), daemon=True).start()
+
+    def _refresh_expired_streams(self):
+        """Refresh queued signed URLs before selecting them for playback."""
+        for item in self.fila:
+            if item.get('status') != 'ok' or not item.get('id'):continue
+            source=item.get('stream') or item.get('arquivo') or ''
+            if not source.startswith(('https://','http://')):continue
+            try:expires=float(parse_qs(urlsplit(source).query).get('expire',['0'])[0])
+            except (ValueError,TypeError):expires=0
+            if expires and expires <= time.time()+60:
+                item.update(status='fila',stream='',arquivo='',_scheduled=False,t0=time.time())
+                self._diagnostics().record('renovando_link',item,'Link de áudio expirado; renovando antes de tocar.')
+                if self._fonte_de(item)!='playlist':
+                    threading.Thread(target=self._resolver,args=(item,),daemon=True).start()
 
     def _resolver(self, item: dict):
         semaphore=self._dl_sema if self._fonte_de(item)=='playlist' else self._request_sema
@@ -937,7 +991,7 @@ class SongRequest:
             q = (item.get("q") or "").strip()
             item["status"] = "busca"
             self.erro = f"buscando: {q[:60]}"
-            hit = _buscar_youtube(q)
+            hit = {'id':item['id'],'titulo':item['titulo'],'dur':item.get('dur') or 0} if self._fonte_de(item)=='playlist' and item.get('id') and item.get('titulo') else _buscar_youtube(q)
             if not hit:
                 item["status"] = "erro"
                 item["titulo"] = f"não achei: {q[:40]}"
@@ -949,7 +1003,7 @@ class SongRequest:
             arq = None
             escolhido = None
             for vid, titulo, dur_i in candidatos:
-                if dur_i and dur_i > MAX_SEG:
+                if dur_i and dur_i > MAX_SEG and self._fonte_de(item) != 'playlist':
                     continue
                 item["id"] = vid
                 velho = item.get("titulo") or ""
@@ -962,6 +1016,12 @@ class SongRequest:
                 item["status"] = "stream"
                 self.erro = f"abrindo áudio: {titulo[:50]}"
                 stream = _url_stream(vid)
+                if not stream:
+                    detail=classify_error(_stream_erro())
+                    if detail['retryable'] and not detail['pause']:
+                        self._diagnostics().record('nova_tentativa',item,detail['reason'],detail['code'])
+                        time.sleep(.5)
+                        stream=_url_stream(vid)
                 if stream:
                     item["stream"] = stream
                     item["arquivo"] = stream
@@ -971,6 +1031,7 @@ class SongRequest:
             if not arq:
                 item['stream']='';item['arquivo']='';item['status']='erro'
                 item['erro']=_stream_erro();self.erro=item['erro']
+                if self._fonte_de(item)=='playlist':self._playlist_failure(item,item['erro'])
             else:
                 item["status"] = "ok"
                 if escolhido:
@@ -983,8 +1044,9 @@ class SongRequest:
                         self.notifications=self.notifications[-100:]
         except Exception as exc:
             item["status"] = "erro"
-            item["titulo"] = str(exc)[:80]
-            self.erro = str(exc)
+            item["erro"] = safe_error(exc)
+            self.erro = item["erro"]
+            if self._fonte_de(item)=="playlist":self._playlist_failure(item,item["erro"])
 
     def retry(self):
         if '429' not in _STREAM_STATUS.get('erro',''):
@@ -1056,16 +1118,20 @@ class SongRequest:
         return i + 1
 
     def _pegar_proximo(self):
+        self._refresh_expired_streams()
         agora = time.time()
         vivos = []
         for x in self.fila:
             st = x.get("status")
+            if st == "skipped":continue
             if st == "erro":
                 vivos.append(x)
                 continue
-            if st in ("fila", "busca", "baixa") and agora - float(x.get("t0") or agora) > 100:
+            if st in ("fila", "busca", "baixa", "stream") and not (self._fonte_de(x) == "playlist" and st == "fila") and agora - float(x.get("t0") or agora) > 120:
+                if self._fonte_de(x)=='playlist':self._playlist_failure(x,'Tempo limite ao preparar o áudio.');continue
                 x["status"] = "erro"
-                x["titulo"] = (x.get("titulo") or "") + " (demorou demais)"
+                x["erro"] = "Tempo limite ao preparar o áudio."
+                vivos.append(x)
                 continue
             vivos.append(x)
         self.fila = vivos
@@ -1084,6 +1150,9 @@ class SongRequest:
             i = random.choice(idxs)
             return self.fila.pop(i)
         for i, x in enumerate(self.fila):
+            # Preserve background order while its head is still resolving.
+            if self._fonte_de(x)=='playlist' and x.get('status') in ('fila','busca','baixa','stream'):
+                return None
             if _pronto(x):
                 return self.fila.pop(i)
         return None
@@ -1143,9 +1212,8 @@ class SongRequest:
                 if vol > 0:
                     self.mutado = False
                 if self.atual and not self.paused:
-                    self.acc = self._elapsed()
-                    self.t0 = time.time()
-                    self._spawn(self.atual.get("arquivo") or "", ss=self.acc)
+                    control=getattr(self.proc,'set_volume',None)
+                    if callable(control):control(vol)
         except Exception as exc:
             self.erro = str(exc)
 
@@ -1160,9 +1228,9 @@ class SongRequest:
                 self.t0 = time.time()
                 self._spawn(self.atual.get("arquivo") or "", ss=ss)
 
-    def set_limits(self, requests=80, playlist=60):
+    def set_limits(self, requests=80, playlist=0):
         self.request_limit=max(1,min(500,int(requests)))
-        self.playlist_limit=max(1,min(500,int(playlist)))
+        self.playlist_limit=max(0,int(playlist))
         return 'Limites atualizados; músicas já aceitas foram preservadas.'
 
     def edit_queue(self, group, operation, key='', target=0):
@@ -1194,9 +1262,8 @@ class SongRequest:
                     self.mutado = True
                     self.volume = 0
                 if self.atual and not self.paused:
-                    self.acc = self._elapsed()
-                    self.t0 = time.time()
-                    self._spawn(self.atual.get("arquivo") or "", ss=self.acc)
+                    control=getattr(self.proc,'set_volume',None)
+                    if callable(control):control(0 if self.mutado else self.volume)
         except Exception as exc:
             self.erro = str(exc)
 
@@ -1239,11 +1306,22 @@ class SongRequest:
         val = self.acc + extra
         return min(dur, val) if dur else val
 
+    def _queue_data(self):
+        signature=tuple((x.get('key'),x.get('user'),x.get('titulo'),x.get('id'),x.get('status'),x.get('fonte'),x.get('dur'),x.get('erro')) for x in self.fila)
+        if getattr(self,'_queue_signature',None)!=signature:
+            self._queue_signature=signature
+            self._queue_revision=getattr(self,'_queue_revision',0)+1
+            rows=[{'key':x.get('key'),'user':x.get('user'),'titulo':x.get('titulo') or x.get('id') or 'Faixa sem título','status':x.get('status'),'fonte':self._fonte_de(x),'dur':x.get('dur') or 0,'erro':x.get('erro') or ''} for x in self.fila]
+            groups={name:[x for x in rows if x['fonte']==name] for name in ('voz','sr','playlist')}
+            self._queue_cache={'rows':rows,'groups':groups,'requests':len(groups['voz'])+len(groups['sr']),'playlist':len(groups['playlist'])}
+        return self._queue_cache
+
     def estado(self) -> dict:
         try:
             with self._lock:
                 el = self._elapsed()
                 dur = float((self.atual or {}).get("dur") or 0)
+                queue=self._queue_data()
                 return {
                     "titulo": _titulo_bonito(self.atual) if self.atual else "",
                     "user": (self.atual or {}).get("user") or "",
@@ -1254,27 +1332,17 @@ class SongRequest:
                     "mutado": self.mutado,
                     "saida": self.saida,
                     "tempo": f"{fmt(el)} / {fmt(dur) if dur else '--:--'}" if self.atual else "--:--",
-                    "fila": [
-                        {"key":x.get('key'),'user': x.get("user"), "titulo": _titulo_bonito(x), "status": x.get("status"), "fonte": self._fonte_de(x),"dur":x.get('dur') or 0,"erro":x.get('erro') or ''}
-                        for x in list(self.fila)
-                    ],
-                    "fila_voz": [
-                        {"user": x.get("user"), "titulo": _titulo_bonito(x), "status": x.get("status")}
-                        for x in list(self.fila) if self._fonte_de(x) == "voz"
-                    ],
-                    "fila_sr": [
-                        {"user": x.get("user"), "titulo": _titulo_bonito(x), "status": x.get("status")}
-                        for x in list(self.fila) if self._fonte_de(x) == "sr"
-                    ],
-                    "fila_pl": [
-                        {"user": x.get("user"), "titulo": _titulo_bonito(x), "status": x.get("status")}
-                        for x in list(self.fila) if self._fonte_de(x) == "playlist"
-                    ],
+                    "fila":queue['rows'],
+                    "queue_revision":self._queue_revision,
+                    "fila_voz":queue['groups']['voz'],
+                    "fila_sr":queue['groups']['sr'],
+                    "fila_pl":queue['groups']['playlist'],
                     "fonte_atual": self._fonte_de(self.atual) if self.atual else "",
                     "erro": self.erro,
                     "notifications":list(getattr(self,'notifications',[])),
-                    "request_count":sum(self._fonte_de(x)!='playlist' for x in self.fila),
-                    "playlist_count":sum(self._fonte_de(x)=='playlist' for x in self.fila),
+                    "diagnostics":self._diagnostics().snapshot(),
+                    "request_count":queue['requests'],
+                    "playlist_count":queue['playlist'],
                     "estado": 'playing' if self.atual and not self.paused and self.proc is not None and self.proc.poll() is None else 'loading' if getattr(self,'_recovering',False) and self.atual and not self.paused else 'paused' if self.atual and self.paused else 'error' if (self.atual and self.erro) or any(x.get('status')=='erro' for x in self.fila) else 'loading' if any(x.get('status') in ('fila','busca','baixa','stream') for x in self.fila) else 'idle',
                     "tem_ytdlp": bool(_YTD_CACHE.get('cmd')),
                     "tem_player": bool(_player() or _ffmpeg()),
@@ -1291,11 +1359,12 @@ class SongRequest:
 
     def _loop(self):
         while not self._stop:
-            time.sleep(0.35)
+            time.sleep(0.5)
             try:
                 from sr_controle import consumir,publicar,dono_local
                 if dono_local():consumir(self)
                 if self._stop:break
+                self._prefetch_playlist()
                 with self._lock:
                     for ped in puxar_pedidos():
                         self.pedir(ped.get("user") or "chat", ped.get("q") or "", fonte=ped.get("fonte") or "sr")
@@ -1310,9 +1379,11 @@ class SongRequest:
                     if self.paused:
                         snap = self._snap()
                     else:
-                        if self.atual and self.proc is not None and self.proc.poll() is not None:
-                            if not self._recover_interruption():
+                        stalled=self._playback_stalled()
+                        if self.atual and self.proc is not None and (self.proc.poll() is not None or stalled):
+                            if not self._recover_interruption(stalled=stalled):
                                 ended = self.atual
+                                self._diagnostics().record('concluida',ended)
                                 self.atual = None
                                 self.acc = 0
                                 self.proc = None
@@ -1343,31 +1414,50 @@ class SongRequest:
                                 self._tocadas = self._tocadas[-30:]
                                 _append_hist(rec)
                                 self._spawn(nxt.get("arquivo") or "")
+                                if self.proc is None:self._playlist_failure(nxt,self.erro or 'O áudio não iniciou.',current=True)
+                                elif self.proc is not None:self._diagnostics().record('tocando',nxt)
                         snap = self._snap()
-                if dono_local():publicar(self.estado())
-                try:
-                    ESTADO.parent.mkdir(parents=True, exist_ok=True)
-                    ESTADO.write_text(json.dumps(snap, ensure_ascii=False), encoding="utf-8")
-                except Exception:
-                    pass
+                now=time.monotonic()
+                if now-getattr(self,'_last_publish',0)>=(1 if self.atual and not self.paused else 3):
+                    self._last_publish=now
+                    if dono_local():publicar(self.estado())
+                    try:
+                        ESTADO.parent.mkdir(parents=True, exist_ok=True)
+                        ESTADO.write_text(json.dumps(snap, ensure_ascii=False), encoding="utf-8")
+                    except Exception:pass
             except Exception as exc:
                 self.erro = str(exc)
 
-    def _recover_interruption(self):
+    def _playback_stalled(self):
+        """Detect a live decoder/device worker no longer delivering PCM."""
+        proc=self.proc
+        position=getattr(proc,'played_seconds',None)
+        if self.paused or proc is None or not isinstance(position,(int,float)):
+            self._progress_watch=None
+            return False
+        now=time.monotonic();watch=getattr(self,'_progress_watch',None)
+        if watch is None or watch[0] is not proc or position>watch[1]+.01:
+            self._progress_watch=(proc,position,now)
+            return False
+        return now-watch[2]>=25
+
+    def _recover_interruption(self, stalled=False):
         """Do not treat an early decoder exit as the end of the song."""
         item=self.atual
         position=self._elapsed()
         duration=float(item.get('dur') or 0)
         code=self.proc.poll()
-        if not (code or (duration > 0 and position < duration - 2)):
+        if not (stalled or code or (duration > 0 and position < duration - 2)):
             return False
+        from audio_out import ler_erro
+        decoder_error=('Áudio sem progresso por 25 segundos. ' if stalled else '')+ler_erro('sr')
         self.acc=position
         self._kill()
         attempts=int(item.get('_recoveries') or 0)
         if attempts >= 3:
-            self.paused=True
-            self.erro='Áudio interrompido antes do fim. Pedido preservado; use Reproduzir para tentar retomar.'
+            self._playlist_failure(item,'Áudio interrompido antes do fim após 3 tentativas de retomada. '+decoder_error,current=True)
             return True
+        self._diagnostics().record('retomando',item,f'Áudio interrompido em {position:.1f}s; tentativa {attempts+1}/3. '+decoder_error)
         item['_recoveries']=attempts+1
         self._recovering=True
         self.erro=f'Conexão de áudio interrompida em {fmt(position)}. Retomando do mesmo ponto ({attempts+1}/3)…'
@@ -1383,10 +1473,12 @@ class SongRequest:
                     if self.proc is None:
                         self.paused=True
                         self.erro=_stream_erro() if not source else self.erro or 'Saída de áudio indisponível. Pedido preservado.'
-            except Exception:
+                        self._playlist_failure(item,self.erro,current=True)
+            except Exception as exc:
                 with self._lock:
                     if self.atual is item and self.proc is None:
-                        self.paused=True;self.erro='Falha ao retomar áudio. Pedido e posição preservados.'
+                        self.paused=True;self.erro='Falha ao retomar áudio: '+safe_error(exc)
+                        self._playlist_failure(item,self.erro,current=True)
             finally:self._recovering=False
         threading.Thread(target=recover,daemon=True).start()
         return True
@@ -1418,7 +1510,7 @@ class SongRequest:
                         "status": x.get("status"),
                         "fonte": x.get("fonte") or "sr",
                     }
-                    for x in list(self.fila)
+                    for x in self.fila[:20]
                 ],
                 "erro": self.erro,
             }
@@ -1458,7 +1550,7 @@ class SongRequest:
                             "status": x.get("status"),
                             "fonte": x.get("fonte") or "sr",
                         }
-                        for x in list(self.fila)
+                        for x in self.fila[:20]
                     ],
                     "erro": self.erro,
                 }
@@ -1489,7 +1581,7 @@ class SongRequest:
                             "status": x.get("status"),
                             "fonte": x.get("fonte") or "sr",
                         }
-                        for x in list(self.fila)
+                        for x in self.fila[:20]
                     ],
                     "erro": self.erro,
                 }
@@ -1517,7 +1609,7 @@ class SongRequest:
                     "status": x.get("status"),
                     "fonte": x.get("fonte") or "sr",
                 }
-                for x in list(self.fila)
+                for x in self.fila[:20]
             ],
             "erro": self.erro,
         }
@@ -1558,14 +1650,6 @@ class SongRequest:
                     return
         vol = 0 if self.mutado else int(self.volume)
         saida = self.saida or ""
-        if (eh_url or fonte.startswith("http")) and not saida:
-            self._spawn_ffplay(fonte, ss, vol)
-            if self.proc is None:
-                self.erro = "ffplay não abriu o áudio. Confere o ffmpeg."
-            else:
-                self.erro = ""
-                self.t0=time.time()
-            return
         try:
             from audio_out import spawn as _spawn_out, ler_erro
 
@@ -1578,8 +1662,6 @@ class SongRequest:
         except Exception as exc:
             self.erro = str(exc)
             self.proc = None
-            if not saida:
-                self._spawn_ffplay(fonte, ss, vol)
 
     def _spawn_ffplay(self, arquivo: str, ss: float, vol: int):
         ply = _player()
@@ -1590,6 +1672,7 @@ class SongRequest:
             cmd = [
                 ply,
                 "-nodisp",
+                "-vn",
                 "-autoexit",
                 "-loglevel",
                 "error",
@@ -1658,6 +1741,10 @@ class SongRequest:
 
     def encerrar(self):
         self._stop = True
+        with _ACTIVE_RUNS_LOCK:pending=list(_ACTIVE_RUNS)
+        for child in pending:
+            try:child.kill()
+            except OSError:pass
         try:
             with self._lock:
                 self.paused = True

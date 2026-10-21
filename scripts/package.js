@@ -93,7 +93,13 @@ for (const file of source)
   fs.cpSync(path.join(root, file), path.join(appDir, file), {
     recursive: true,
     filter: (source) =>
-      !source.includes('__pycache__') && !source.endsWith('.pyc'),
+      !['aprendizado', 'tmp_sr', 'tmp_audio'].includes(path.basename(source)) &&
+      !source.includes('__pycache__') &&
+      !source.endsWith('.pyc') &&
+      !(
+        path.relative(root, source).startsWith('.runtime' + path.sep) &&
+        path.relative(root, source).split(path.sep).includes('tests')
+      ),
   });
 for (const dep of Object.keys(pkg.dependencies))
   fs.cpSync(
@@ -112,17 +118,9 @@ fs.writeFileSync(
   `KAIA CHAT ${pkg.version} — WINDOWS 10/11 x64\r\n\r\nExtraia o ZIP inteiro e abra KaiaChat.exe.\r\nConfigure Twitch, Kick e/ou Starvios com seus próprios canais.\r\nSelecione som/volume por plataforma e clique em Salvar e conectar.\r\nFontes, cores e sombras ficam em Fonte, cor e sombra. A aba Widget fornece URL para OBS, layouts e CSS.\r\nA engrenagem recolhe apenas as configurações. O último botão ativa o chat transparente com passagem de cliques para o jogo.\r\nCtrl+Shift+F9 retorna às configurações e libera os cliques.\r\n\r\nSem login e somente leitura. Requer internet.\r\nCada computador salva suas próprias preferências.\r\nNão envie somente o EXE; compartilhe o ZIP completo.\r\nCódigo-fonte em resources/app. Licença GPLv3 e créditos incluídos.\r\n`,
 );
 execFileSync(
-  'powershell.exe',
-  [
-    '-NoProfile',
-    '-Command',
-    "Add-Type -AssemblyName System.IO.Compression; Add-Type -AssemblyName System.IO.Compression.FileSystem; $root=(Get-Item -LiteralPath $env:KAIA_STAGE).FullName; $base=[IO.Path]::GetFileName($root); $output=[IO.File]::Open($env:KAIA_ZIP,[IO.FileMode]::CreateNew); $archive=[IO.Compression.ZipArchive]::new($output,[IO.Compression.ZipArchiveMode]::Create); try { Get-ChildItem -LiteralPath $root -Recurse -File | ForEach-Object { $entry=$base+'/'+$_.FullName.Substring($root.Length+1).Replace([char]92,[char]47); [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive,$_.FullName,$entry,[IO.Compression.CompressionLevel]::Optimal) | Out-Null } } finally { $archive.Dispose(); $output.Dispose() }",
-  ],
-  {
-    env: { ...process.env, KAIA_STAGE: stage, KAIA_ZIP: zip },
-    windowsHide: true,
-    stdio: 'inherit',
-  },
+  path.join(root, '.runtime', 'python', 'python.exe'),
+  [path.join(root, 'scripts', 'create_zip.py'), stage, zip],
+  { windowsHide: true, stdio: 'inherit' },
 );
 const hash = crypto
   .createHash('sha256')

@@ -1,6 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 module.exports = async (win, app, emit, config, transcript) => {
+  const domOnly = process.argv.includes('--smoke-dom-only');
+  async function screenshot(contents, name) {
+    if (domOnly) return null;
+    const image = await contents.capturePage();
+    fs.writeFileSync(path.join(__dirname, name), image.toPNG());
+    return image;
+  }
   try {
     const initial = await win.webContents.executeJavaScript(
       `({rows:document.querySelectorAll('.message').length,fresh:['twitch','kick','starvios','custom'].every(p=>document.getElementById(p+'-channel').value===''),starvios:!!document.getElementById('starvios-sound'),custom:!!document.getElementById('custom-url'),fonts:document.querySelector('#fontFamily').options.length})`,
@@ -58,19 +65,17 @@ module.exports = async (win, app, emit, config, transcript) => {
       restored.color === '#fef08a' &&
       restored.shadow === '8' &&
       restored.names === false;
-    const image = await win.webContents.capturePage();
-    fs.writeFileSync(path.join(__dirname, 'preview.png'), image.toPNG());
+    await screenshot(win.webContents, 'preview.png');
     await win.webContents.executeJavaScript(`window.kaia.window('overlay')`);
     await new Promise((resolve) => setTimeout(resolve, 250));
     const transparent = await win.webContents.executeJavaScript(
       `({background:getComputedStyle(document.body).backgroundColor,border:getComputedStyle(document.body).borderTopWidth,header:getComputedStyle(document.querySelector('header')).display,toolbar:getComputedStyle(document.querySelector('.toolbar')).display,feed:getComputedStyle(document.getElementById('feed')).backgroundColor,rows:document.querySelectorAll('.message').length})`,
     );
-    const overlayImage = await win.webContents.capturePage();
-    fs.writeFileSync(
-      path.join(__dirname, 'preview-transparent.png'),
-      overlayImage.toPNG(),
+    const overlayImage = await screenshot(
+      win.webContents,
+      'preview-transparent.png',
     );
-    const alpha = overlayImage.toBitmap()[3];
+    const alpha = overlayImage ? overlayImage.toBitmap()[3] : null;
     await win.webContents.executeJavaScript(`window.kaia.window('overlay')`);
     await new Promise((resolve) => setTimeout(resolve, 150));
     const recovered = await win.webContents.executeJavaScript(
@@ -83,7 +88,7 @@ module.exports = async (win, app, emit, config, transcript) => {
       transparent.toolbar === 'none' &&
       transparent.feed === 'rgba(0, 0, 0, 0)' &&
       transparent.rows === 3 &&
-      alpha === 0 &&
+      (domOnly || alpha === 0) &&
       recovered;
     emit('message', {
       platform: 'twitch',
@@ -145,10 +150,7 @@ module.exports = async (win, app, emit, config, transcript) => {
       `document.getElementById('blocked-panel').open=true;document.getElementById('blocked-panel').scrollIntoView({block:'start'});`,
     );
     await new Promise((resolve) => setTimeout(resolve, 150));
-    fs.writeFileSync(
-      path.join(__dirname, 'preview-blocked.png'),
-      (await win.webContents.capturePage()).toPNG(),
-    );
+    await screenshot(win.webContents, 'preview-blocked.png');
     const blockingPassed =
       savedBlocks.saved &&
       savedBlocks.removed &&
@@ -170,7 +172,7 @@ module.exports = async (win, app, emit, config, transcript) => {
     });
     await new Promise((resolve) => setTimeout(resolve, 1150));
     const fading = await win.webContents.executeJavaScript(
-      `(()=>{const row=document.querySelector('[data-message-id="expiry-demo"]');return !!row&&row.classList.contains('message-fading')&&Number(getComputedStyle(row).opacity)<1;})()`,
+      `(()=>{const row=document.querySelector('[data-message-id="expiry-demo"]');return !!row&&row.classList.contains('message-fading')&&(${domOnly}||Number(getComputedStyle(row).opacity)<1);})()`,
     );
     await new Promise((resolve) => setTimeout(resolve, 600));
     const expired = await win.webContents.executeJavaScript(
@@ -204,10 +206,7 @@ module.exports = async (win, app, emit, config, transcript) => {
       `document.getElementById('timing-panel').open=true;document.getElementById('timing-panel').scrollIntoView({block:'start'});`,
     );
     await new Promise((resolve) => setTimeout(resolve, 150));
-    fs.writeFileSync(
-      path.join(__dirname, 'preview-timing.png'),
-      (await win.webContents.capturePage()).toPNG(),
-    );
+    await screenshot(win.webContents, 'preview-timing.png');
     const timingPassed =
       timingSaved &&
       fading &&
@@ -280,20 +279,14 @@ module.exports = async (win, app, emit, config, transcript) => {
       (await previewFrame.executeJavaScript(
         `document.body.dataset.layout==='cards'&&!!document.querySelector('[data-id="widget-native"]')`,
       ));
-    fs.writeFileSync(
-      path.join(__dirname, 'preview-widget-editor.png'),
-      (await win.webContents.capturePage()).toPNG(),
-    );
+    await screenshot(win.webContents, 'preview-widget-editor.png');
     await win.webContents.executeJavaScript(
       `document.getElementById('tab-chat').click()`,
     );
     controls.widgetDetails = await widgetTest.webContents.executeJavaScript(
       `({html:document.getElementById('feed').innerHTML,layout:document.body.dataset.layout,config:typeof config==='undefined'?null:config,css:document.getElementById('custom-css').textContent})`,
     );
-    fs.writeFileSync(
-      path.join(__dirname, 'preview-widget.png'),
-      (await widgetTest.webContents.capturePage()).toPNG(),
-    );
+    await screenshot(widgetTest.webContents, 'preview-widget.png');
     widgetTest.destroy();
     const widgetPassed =
       controls.collapsed &&
@@ -316,10 +309,7 @@ module.exports = async (win, app, emit, config, transcript) => {
       (await win.webContents.executeJavaScript(
         `document.body.classList.contains('fullscreen')`,
       ));
-    fs.writeFileSync(
-      path.join(__dirname, 'preview-maximized.png'),
-      (await win.webContents.capturePage()).toPNG(),
-    );
+    await screenshot(win.webContents, 'preview-maximized.png');
     win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
     await new Promise((resolve) => setTimeout(resolve, 250));
     windowTests.restored =
@@ -390,27 +380,18 @@ module.exports = async (win, app, emit, config, transcript) => {
     mediaTests.editor = await mediaFrame.webContents.executeJavaScript(
       `!!document.getElementById('save')&&!!document.getElementById('preview')`,
     );
-    fs.writeFileSync(
-      path.join(__dirname, 'preview-sr-editor.png'),
-      (await mediaFrame.webContents.capturePage()).toPNG(),
-    );
+    await screenshot(mediaFrame.webContents, 'preview-sr-editor.png');
     mediaFrame.destroy();
     await win.webContents.executeJavaScript(
       `document.getElementById('tab-reader').click()`,
     );
     await new Promise((resolve) => setTimeout(resolve, 200));
-    fs.writeFileSync(
-      path.join(__dirname, 'preview-reader.png'),
-      (await win.webContents.capturePage()).toPNG(),
-    );
+    await screenshot(win.webContents, 'preview-reader.png');
     await win.webContents.executeJavaScript(
       `document.getElementById('tab-sr').click()`,
     );
     await new Promise((resolve) => setTimeout(resolve, 150));
-    fs.writeFileSync(
-      path.join(__dirname, 'preview-sr.png'),
-      (await win.webContents.capturePage()).toPNG(),
-    );
+    await screenshot(win.webContents, 'preview-sr.png');
     const playerTests = {};
     await win.webContents.executeJavaScript(
       `document.getElementById('tab-chat').click()`,
@@ -432,10 +413,7 @@ module.exports = async (win, app, emit, config, transcript) => {
         `({timeline:document.getElementById('chat-sr-timeline').max==='120'&&Number(document.getElementById('chat-sr-timeline').value)>=30,pause:document.getElementById('chat-sr-play').getAttribute('aria-label')==='Pausar música',icons:document.querySelectorAll('.mini-player-buttons svg').length===4})`,
       ),
     );
-    fs.writeFileSync(
-      path.join(__dirname, 'preview-chat-player.png'),
-      (await win.webContents.capturePage()).toPNG(),
-    );
+    await screenshot(win.webContents, 'preview-chat-player.png');
     emit('sr-state', {
       titulo: '',
       elapsed: 0,
@@ -583,6 +561,47 @@ module.exports = async (win, app, emit, config, transcript) => {
     v10.lastAlert = await win.webContents.executeJavaScript(
       `document.getElementById('last-alert').textContent.includes('seguiu')&&document.getElementById('chat-last-alert').textContent.includes('seguiu')`,
     );
+    const playlistSizing = await win.webContents.executeJavaScript(`(async()=>{
+      const data=await window.kaia.load();
+      const large=await window.kaia.saveSR({...data.sr,playlistLimit:9999});
+      const all=await window.kaia.saveSR({...data.sr,playlistLimit:0});
+      const field=document.getElementById('sr-playlistLimit');
+      return large.playlistLimit===9999&&all.playlistLimit===0&&!field.hasAttribute('max');
+    })()`);
+    const volumeLive = await win.webContents.executeJavaScript(`(async()=>{
+      const field=document.getElementById('sr-volume');
+      if(field.type!=='range')return false;
+      field.value='31';field.dispatchEvent(new Event('input',{bubbles:true}));
+      const deadline=Date.now()+6000;
+      while(Date.now()<deadline){
+        const saved=await window.kaia.load();
+        if(saved.sr.volume===31){field.value='80';field.dispatchEvent(new Event('input',{bubbles:true}));return true;}
+        await new Promise(r=>setTimeout(r,50));
+      }
+      return false;
+    })()`);
+    if(!volumeLive)throw Error('SR volume slider did not apply on input');
+    emit('sr-state', {
+      fila: Array.from({ length: 9999 }, (_, i) => ({
+        key: 'large-' + i,
+        titulo: 'Track ' + i,
+        fonte: 'playlist',
+        status: 'fila',
+      })),
+      playlist_count: 9999,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    const playlistPaging = await win.webContents.executeJavaScript(`(()=>{
+      const list=document.getElementById('sr-background-queue');
+      const bounded=list.children.length===101;
+      list.firstElementChild.querySelectorAll('button')[1].click();
+      return bounded&&list.children.length===101&&list.children[1].textContent.startsWith('101.')&&list.children[1].querySelector('input').max==='9999';
+    })()`);
+    emit('sr-state', { diagnostics: {sequence: 1, events: [{at: Date.now()/1000, event:'pulada', title:'Faixa de teste', reason:'Private video', position:7}]} });
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    const srDiagnostics = await win.webContents.executeJavaScript(`document.getElementById('sr-diagnostics').textContent.includes('Private video')&&document.getElementById('sr-background-queue').children.length===101&&!!document.getElementById('sr-export-log')`);
+    if (!srDiagnostics) throw Error('SR diagnostics or partial queue update failed');
+    emit('sr-state', { fila: [], playlist_count: 0 });
     const localeTests = await win.webContents.executeJavaScript(`(async()=>{
       const preserved=document.createElement('div');preserved.className='message';preserved.textContent='Salvar e conectar';document.getElementById('feed').append(preserved);
       const rows=[];const voices=await window.kaia.voices();const before=document.getElementById('twitch-channel').value;
@@ -609,13 +628,15 @@ module.exports = async (win, app, emit, config, transcript) => {
         `window.kaia.saveLanguage(${JSON.stringify(language)}).then(()=>document.getElementById('tab-reader').click())`,
       );
       await new Promise((resolve) => setTimeout(resolve, 150));
-      fs.writeFileSync(
-        path.join(__dirname, 'preview-language-' + language + '.png'),
-        (await win.webContents.capturePage()).toPNG(),
+      await screenshot(
+        win.webContents,
+        'preview-language-' + language + '.png',
       );
     }
     const result = {
       passed:
+        playlistSizing &&
+        playlistPaging &&
         localeTests.passed &&
         localeTests.persisted &&
         Object.values(v10).every(Boolean) &&
@@ -634,6 +655,7 @@ module.exports = async (win, app, emit, config, transcript) => {
       restored,
       transparent,
       alpha,
+      visualCapture: !domOnly,
       recovered,
       blocking: { savedBlocks, rejected, allowed, persisted: persistedBlocks },
       timing: {
@@ -652,6 +674,8 @@ module.exports = async (win, app, emit, config, transcript) => {
       playerTests,
       v10,
       localeTests,
+      playlistSizing,
+      playlistPaging,
     };
     fs.writeFileSync(
       path.join(__dirname, 'smoke-result.json'),

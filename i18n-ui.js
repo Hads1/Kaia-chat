@@ -88,12 +88,22 @@
     );
   }
   function init() {
+    const pendingRoots = new Set();
     observer = new MutationObserver((records) => {
-      if (scheduled) return;
+      for (const record of records) {
+        if (record.type === 'childList') {
+          for (const node of record.addedNodes)
+            if (node.nodeType === 1 || node.nodeType === 3)
+              pendingRoots.add(node);
+        } else pendingRoots.add(record.target);
+      }
+      if (scheduled || !pendingRoots.size) return;
       scheduled = true;
       queueMicrotask(() => {
         scheduled = false;
-        apply();
+        const roots = [...pendingRoots];
+        pendingRoots.clear();
+        for (const root of roots) if (root.isConnected) apply(root);
       });
     });
     const button = document.getElementById('language-toggle'),

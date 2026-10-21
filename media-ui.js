@@ -165,6 +165,23 @@
         if (action === 'stop') el('reader-enabled').checked = false;
         return result;
       });
+  let volumePending = null, volumeBusy = false, volumeTimer;
+  async function sendVolume() {
+    clearTimeout(volumeTimer);
+    volumeTimer = null;
+    if (volumeBusy || volumePending === null) return;
+    volumeBusy = true;
+    const value = volumePending;
+    volumePending = null;
+    try { await window.kaia.srAction('set_volume', [value]); }
+    catch (error) { el('sr-status').textContent = error.message; }
+    finally { volumeBusy = false; if (volumePending !== null) volumeTimer = setTimeout(sendVolume, 40); }
+  }
+  el('sr-volume').oninput = () => {
+    volumePending = Number(el('sr-volume').value);
+    if (!volumeTimer) volumeTimer = setTimeout(sendVolume, 40);
+  };
+  el('sr-volume').onchange = () => { volumePending = Number(el('sr-volume').value); sendVolume(); };
   el('save-sr').onclick = () =>
     task('sr', async () => {
       await window.kaia.saveSR({
@@ -187,6 +204,8 @@
   for (const button of document.querySelectorAll('[data-sr]'))
     button.onclick = () =>
       task('sr', () => window.kaia.srAction(button.dataset.sr, []));
+  el('sr-export-log').onclick = () =>
+    task('sr', () => window.kaia.srAction('export-log', []));
   el('sr-test-audio').onclick = () =>
     task('sr-audio', async () => {
       await window.kaia.saveSR({
@@ -207,6 +226,7 @@
       window.kaia.srAction('adicionar_playlist', [
         el('sr-playlist').value,
         'Operador',
+        el('sr-playlistLimit').value,
       ]),
     );
   el('sr-seek-go').onclick = () =>
@@ -215,7 +235,10 @@
         Math.max(0, Number(el('sr-seek').value) || 0),
       ]),
     );
+  let lastSRState = {};
   function srState(s) {
+    s = { ...lastSRState, ...s };
+    lastSRState = s;
     el('sr-now').toggleAttribute(
       'data-i18n-ignore',
       !!(s.titulo || s.fila?.[0]?.titulo),
@@ -237,6 +260,9 @@
     if (s.erro) el('sr-status').textContent = s.erro;
     function rows(id, items, action) {
       const list = el(id);
+      const signature = JSON.stringify(items || []);
+      if (list.dataset.signature === signature) return;
+      list.dataset.signature = signature;
       list.replaceChildren();
       (items || []).forEach((item, index) => {
         const row = document.createElement('li'),
@@ -252,18 +278,57 @@
       });
     }
     function queueRows(id, group) {
+      const list = el(id);
+      if (list._queueSource === s.fila && list._queuePage === list.dataset.page)
+        return;
+      list._queueSource = s.fila;
       const items = (s.fila || []).filter(
         (x) => (x.fonte === 'playlist') === (group === 'playlist'),
       );
-      const list = el(id);
-      const signature = JSON.stringify(items);
+      const page = Math.min(
+        Number(list.dataset.page || 0),
+        Math.max(0, Math.ceil(items.length / 100) - 1),
+      );
+      list.dataset.page = page;
+      list._queuePage = list.dataset.page;
+      const start = page * 100;
+      const signature = JSON.stringify([page, items]);
       if (list.dataset.signature === signature) return;
       list.dataset.signature = signature;
       list.replaceChildren();
-      items.forEach((item, index) => {
+      if (items.length > 100) {
+        const navigation = document.createElement('li');
+        for (const [symbol, delta] of [
+          ['←', -1],
+          ['→', 1],
+        ]) {
+          const button = document.createElement('button');
+          button.textContent = symbol;
+          button.disabled =
+            delta < 0 ? page === 0 : start + 100 >= items.length;
+          button.onclick = () => {
+            list.dataset.page = page + delta;
+            srState(s);
+          };
+          navigation.append(button);
+        }
+        const count = document.createElement('span');
+        count.dataset.i18nIgnore = '';
+        count.textContent =
+          start +
+          1 +
+          '–' +
+          Math.min(start + 100, items.length) +
+          ' / ' +
+          items.length;
+        navigation.append(count);
+        list.append(navigation);
+      }
+      items.slice(start, start + 100).forEach((item, offset) => {
+        const index = start + offset;
         const row = document.createElement('li'),
           text = document.createElement('span');
-        text.textContent = `${index + 1}. ${item.user || ''}: ${item.titulo || ''} · ${item.status || ''}`;
+        text.textContent = `${index + 1}. ${item.user || ''}: ${item.titulo || ''} · ${item.status || ''}${item.erro ? ' · ' + item.erro : ''}`;
         text.dataset.i18nIgnore = '';
         row.append(text);
         const button = (label, op, target) => {
@@ -311,6 +376,27 @@
       (s.fila || []).filter((x) => x.fonte === 'playlist').length;
     if (s.playlist_job?.message)
       el('sr-playlist-job').textContent = s.playlist_job.message;
+    const diagnostics = el('sr-diagnostics');
+    if (diagnostics) {
+      const events = s.diagnostics?.events || [];
+      const signature = JSON.stringify(events);
+      if (diagnostics.dataset.signature !== signature) {
+        diagnostics.dataset.signature = signature;
+        diagnostics.replaceChildren();
+        for (const event of events.slice().reverse()) {
+          const row = document.createElement('li');
+          row.dataset.i18nIgnore = '';
+          row.textContent =
+            new Date(event.at * 1000).toLocaleTimeString() +
+            ' · ' +
+            event.event +
+            (event.position ? ' · #' + event.position : '') +
+            (event.title ? ' · ' + event.title : '') +
+            (event.reason ? ' · ' + event.reason : '');
+          diagnostics.append(row);
+        }
+      }
+    }
     rows('sr-history', s.historico, 'apagar_historico');
     el('sr-stats').textContent = s.stats ? JSON.stringify(s.stats) : '';
   }

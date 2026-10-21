@@ -1,5 +1,6 @@
 const {
   ipcMain,
+  dialog,
   BrowserWindow,
   shell,
   safeStorage,
@@ -37,16 +38,20 @@ function installMedia({
     repeat: 'off',
     shuffle: false,
     requestLimit: 80,
-    playlistLimit: 60,
+    playlistLimit: 0,
     announceRequests: true,
     ...settings.sr,
   };
+  if (!settings.sr.playlistSizingV2 && settings.sr.playlistLimit === 60)
+    settings.sr.playlistLimit = 0;
+  settings.sr.playlistSizingV2 = true;
   const backend = new MediaBackend(directory, (kind, text) =>
     notify(kind, text),
   );
   const notify = (kind, text) => emit('media-status', { kind, text });
   let announcementState = null,
     lastRequest = null;
+  let volumeSaveTimer;
   function voiceState(phase, text, error = '') {
     announcementState = { phase, text, error, at: Date.now() };
     emit('announcement-state', announcementState);
@@ -266,14 +271,23 @@ function installMedia({
       configuring = null;
     }
   }
-  let configuredProcess, srState;
+  let configuredProcess,
+    srState,
+    pollProcess,
+    queueRevision = -1;
   const announced = new Set();
   const startedAt = Date.now() / 1000;
   const poll = setInterval(async () => {
     if (smoke || closing || pollBusy || !backend.process) return;
     pollBusy = true;
     try {
-      srState = await backend.call('state', [], 5000);
+      if (pollProcess !== backend.process) {
+        pollProcess = backend.process;
+        queueRevision = -1;
+      }
+      const update = await backend.call('state', [queueRevision], 5000);
+      queueRevision = update.queue_revision ?? -1;
+      srState = { ...srState, ...update };
       for (const item of srState.notifications || [])
         if (!announced.has(item.key)) {
           announced.add(item.key);
@@ -283,7 +297,7 @@ function installMedia({
         }
       if (announced.size > 2000)
         announced.delete(announced.values().next().value);
-      emit('sr-state', srState);
+      emit('sr-state', update);
     } catch (error) {
       notify('sr', error.message);
     } finally {
@@ -351,11 +365,10 @@ function installMedia({
           Number(value.requestLimit ?? settings.sr.requestLimit) || 80,
         ),
       ),
-      playlistLimit: Math.min(
-        500,
-        Math.max(
-          1,
-          Number(value.playlistLimit ?? settings.sr.playlistLimit) || 60,
+      playlistLimit: Math.max(
+        0,
+        Math.floor(
+          Number(value.playlistLimit ?? settings.sr.playlistLimit) || 0,
         ),
       ),
       announceRequests: value.announceRequests ?? settings.sr.announceRequests,
@@ -392,6 +405,7 @@ function installMedia({
     'limpar_historico',
     'apagar_historico',
     'test-audio',
+    'export-log',
     'play',
     'pause',
     'edit_queue',
@@ -404,8 +418,33 @@ function installMedia({
       (!String(args[1] || '').trim() || String(args[1]).length > 500)
     )
       throw Error('Informe uma música ou link válido.');
+    if (action === 'export-log') {
+      const source = path.join(directory, 'aprendizado', 'sr-events.jsonl');
+      if (!fs.existsSync(source))
+        throw Error('Nenhum evento do SR registrado ainda.');
+      const result = await dialog.showSaveDialog(win, {
+        defaultPath: 'KaiaChat-SR-log.jsonl',
+        filters: [{ name: 'Log JSON Lines', extensions: ['jsonl'] }],
+      });
+      if (result.canceled) return 'Exportação cancelada.';
+      const text = fs.readFileSync(source, 'utf8');
+      fs.writeFileSync(
+        result.filePath,
+        text.slice(0, text.lastIndexOf('\n') + 1),
+      );
+      return 'Log do SR exportado.';
+    }
     await backend.start();
     if (configuredProcess !== backend.process) await configureSR();
+    if (action === 'adicionar_playlist' && args.length >= 3) {
+      settings.sr.playlistLimit = Math.max(0, Math.floor(Number(args[2]) || 0));
+      saveSettings();
+      await backend.call('set_limits', [
+        settings.sr.requestLimit,
+        settings.sr.playlistLimit,
+      ]);
+      args = args.slice(0, 2);
+    }
     if (action === 'test-audio')
       return backend.call('test-sr-audio', {
         output: settings.sr.output,
@@ -427,7 +466,9 @@ function installMedia({
     }
     if (action === 'set_volume') {
       settings.sr.volume = Math.min(100, Math.max(0, Number(args[0]) || 0));
-      saveSettings();
+      clearTimeout(volumeSaveTimer);
+      volumeSaveTimer = setTimeout(() => { volumeSaveTimer = null; saveSettings(); }, 500);
+      return result;
     }
     notify('sr', typeof result === 'string' ? result : 'Comando executado.');
     return result;
@@ -584,6 +625,7 @@ function installMedia({
     languageChanged: () => reader.configure(settings.reader),
     async close() {
       closing = true;
+      if (volumeSaveTimer) { clearTimeout(volumeSaveTimer); saveSettings(); }
       clearInterval(poll);
       clearInterval(cookieTimer);
       spotify.close();

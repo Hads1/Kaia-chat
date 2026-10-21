@@ -12,6 +12,8 @@
       'M17 2l4 4-4 4V7H7a3 3 0 0 0-3 3v2H2v-2a5 5 0 0 1 5-5h10zM7 22l-4-4 4-4v3h10a3 3 0 0 0 3-3v-2h2v2a5 5 0 0 1-5 5H7z',
   };
   function icon(button, name) {
+    if (button.dataset.srIcon === name) return;
+    button.dataset.srIcon = name;
     button.replaceChildren();
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 24 24');
@@ -138,7 +140,7 @@
   }
   window.KaiaMiniPlayer = {
     update(value) {
-      state = value || {};
+      state = { ...state, ...value };
       received = Date.now();
       paint();
     },
@@ -156,6 +158,8 @@
       ? 'Leitor ativo · ' + s.reader.output
       : 'Leitor desativado';
   });
-  setInterval(paint, 250);
+  setInterval(() => {
+    if (state.tocando && !state.paused) paint();
+  }, 500);
   paint();
 })();
